@@ -599,11 +599,16 @@ function renderHoje(){
   window._statTodos = todos;
 
   document.getElementById('stats').innerHTML=`
-    <div class="stat" onclick="abrirDetalhe('registraram')"><div class="stat-val">${comReg}</div><div class="stat-lbl">Registraram</div></div>
-    <div class="stat" onclick="abrirDetalhe('naloja')"><div class="stat-val">${naLoja}</div><div class="stat-lbl">Na loja</div></div>
-    <div class="stat" onclick="abrirDetalhe('almoco')"><div class="stat-val">${emAlm}</div><div class="stat-lbl">Em almoço</div></div>
-    <div class="stat" onclick="abrirDetalhe('completos')"><div class="stat-val">${completos}</div><div class="stat-lbl">Completos</div></div>
-    <div class="stat" onclick="abrirDetalhe('ocorrencias')"><div class="stat-val">${ocorrs}</div><div class="stat-lbl">Ocorrências</div></div>`;
+    <div class="stat" id="stat-registraram"><div class="stat-val">${comReg}</div><div class="stat-lbl">Registraram</div></div>
+    <div class="stat" id="stat-naloja"><div class="stat-val">${naLoja}</div><div class="stat-lbl">Na loja</div></div>
+    <div class="stat" id="stat-almoco"><div class="stat-val">${emAlm}</div><div class="stat-lbl">Em almoço</div></div>
+    <div class="stat" id="stat-completos"><div class="stat-val">${completos}</div><div class="stat-lbl">Completos</div></div>
+    <div class="stat" id="stat-ocorrencias"><div class="stat-val">${ocorrs}</div><div class="stat-lbl">Ocorrências</div></div>`;
+  // Adicionar listeners após render
+  ['registraram','naloja','almoco','completos','ocorrencias'].forEach(tipo=>{
+    const el=document.getElementById('stat-'+tipo);
+    if(el) el.addEventListener('click',()=>abrirDetalhe(tipo));
+  });
   // Alertas
   const alertas=[];
   const agora=toMins(getNow());
@@ -997,7 +1002,6 @@ function abrirDetalhe(tipo){
     :'<div class="detalhe-vazio">Nenhuma pessoa nesta categoria.</div>';
   openModal('modal-detalhe');
 }
-window.abrirDetalhe=abrirDetalhe;
 
 // NAV
 function setNavTab(aba,btn){
