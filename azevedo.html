@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LIVE! Azevedo Sodré — Ponto</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f2f2f2;min-height:100vh;display:flex;align-items:flex-start;justify-content:center;padding:16px}
+.wrap{width:100%;max-width:420px}
+.hdr{background:#1a1a1a;color:#f0c000;padding:14px 18px;border-radius:12px 12px 0 0;display:flex;justify-content:space-between;align-items:center}
+.hdr-logo{font-size:22px;font-weight:700;letter-spacing:2px}
+.hdr-loja{font-size:12px;color:#f0c000;margin-top:2px;opacity:.85}
+.hdr-right{text-align:right}
+.hdr-hora{font-size:20px;font-weight:600;color:#f0c000}
+.hdr-data{font-size:11px;color:#aaa;margin-top:2px}
+.feriado-bar{background:#e65c00;color:#fff;padding:7px 18px;font-size:12px;font-weight:500;display:none;align-items:center;gap:6px}
+.bdy{background:#fff;border:1px solid #e0e0e0;border-top:none;border-radius:0 0 12px 12px;padding:20px}
+.screen{display:none}.screen.active{display:block}
+.lbl{font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;margin-top:14px}
+.lbl:first-child{margin-top:0}
+select{width:100%;padding:11px 12px;border:1px solid #ddd;border-radius:8px;background:#fafafa;color:#1a1a1a;font-size:15px;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23888' d='M6 8L1 3h10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center}
+.turno-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px}
+.tb{padding:13px 8px;border:1.5px solid #e0e0e0;border-radius:8px;background:#fafafa;color:#666;font-size:12px;cursor:pointer;text-align:center;transition:all .15s}
+.tb .ti{font-size:24px;display:block;margin-bottom:5px}
+.tb .tl{display:block;font-size:11px;font-weight:500}
+.tb.sel{border-color:#1a1a1a;background:#1a1a1a;color:#f0c000}
+.tb.done{opacity:.38;cursor:default;background:#f5f5f5;pointer-events:none}
+.btn-reg{width:100%;padding:14px;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;border:none;margin-top:14px;background:#1a1a1a;color:#f0c000;letter-spacing:.5px}
+.btn-reg:disabled{opacity:.35;cursor:default}
+.dvd{border:none;border-top:1px solid #f0f0f0;margin:16px 0}
+.ok-box{background:#f8f8f8;border-radius:10px;padding:22px;text-align:center;margin-bottom:16px}
+.ok-ico{font-size:40px;margin-bottom:10px}
+.ok-title{font-size:18px;font-weight:600;color:#1a1a1a}
+.ok-sub{font-size:13px;color:#888;margin-top:5px}
+.ok-prox{margin-top:10px;font-size:12px;color:#555;background:#fff;border-radius:6px;padding:6px 12px;display:inline-block;border:1px solid #e8e8e8}
+.ok-turno{margin-top:8px;font-size:11px;color:#aaa}
+.badge{display:inline-block;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:500}
+.b-e{background:#d4edda;color:#1a5c2e}.b-a{background:#fff3cd;color:#7a5500}.b-r{background:#d1ecf1;color:#0c5460}.b-s{background:#f8d7da;color:#7a2025}.b-p{background:#f0f0f0;color:#aaa;font-size:10px}
+.hist-card{border:1px solid #ececec;border-radius:8px;padding:10px 12px;margin-bottom:8px}
+.hist-nome{font-size:13px;font-weight:600;color:#1a1a1a}
+.hist-turno{font-size:11px;color:#aaa;margin-bottom:6px}
+.hist-badges{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:5px}
+.hist-horas{font-size:11px;color:#888;padding-top:5px;border-top:1px solid #f5f5f5}
+.extra-pos{color:#1a7a3c;font-weight:500}
+.extra-neg{color:#b83232;font-weight:500}
+.empty{text-align:center;padding:30px;color:#aaa;font-size:13px}
+.nav-row{display:flex;gap:8px}
+.nav-row .btn-sm{flex:1;padding:9px;border-radius:8px;font-size:12px;cursor:pointer;border:1px solid #e0e0e0;background:transparent;color:#666;text-align:center}
+.dia-badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:500;margin-bottom:12px}
+.dia-normal{background:#f0f0f0;color:#555}
+.dia-domingo{background:#fce4ec;color:#880e4f}
+.dia-sabado{background:#e8f5e9;color:#1b5e20}
+.dia-feriado{background:#fff3e0;color:#e65c00}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div id="s-form" class="screen active">
+  <div class="hdr">
+    <div><div class="hdr-logo">LIVE!</div><div class="hdr-loja">Azevedo Sodré</div></div>
+    <div class="hdr-right"><div class="hdr-hora" id="f-hora">--:--</div><div class="hdr-data" id="f-data"></div></div>
+  </div>
+  <div class="feriado-bar" id="feriado-bar">🎉 <span id="feriado-nome-bar">Feriado</span> — horário especial ativo</div>
+  <div class="bdy">
+    <div id="dia-info"></div>
+    <div class="lbl">Seu nome</div>
+    <select id="f-vend" onchange="onVendChange()">
+      <option value="">Selecione seu nome...</option>
+      <option>Mariela Parente de Toledo Piza</option>
+      <option>Raisa Vigolo Chaves</option>
+      <option>Debora Cristina Olimpio de Oliveira</option>
+    </select>
+    <div class="lbl">Tipo de registro</div>
+    <div class="turno-grid">
+      <button class="tb" id="tb-entrada" onclick="selT('entrada')"><span class="ti">🟢</span><span class="tl" id="tl-entrada">Entrada</span></button>
+      <button class="tb" id="tb-saida_almoco" onclick="selT('saida_almoco')"><span class="ti">🍽️</span><span class="tl" id="tl-saida_almoco">Saída Almoço</span></button>
+      <button class="tb" id="tb-retorno_almoco" onclick="selT('retorno_almoco')"><span class="ti">🔄</span><span class="tl" id="tl-retorno_almoco">Retorno Almoço</span></button>
+      <button class="tb" id="tb-saida" onclick="selT('saida')"><span class="ti">🔴</span><span class="tl" id="tl-saida">Saída</span></button>
+    </div>
+    <button class="btn-reg" id="btn-reg" onclick="registrar()" disabled>Registrar Ponto</button>
+    <div class="dvd"></div>
+    <div class="nav-row"><button class="btn-sm" onclick="showScreen('s-hist')">📋 Ver registros do dia</button></div>
+  </div>
+</div>
+
+<div id="s-ok" class="screen">
+  <div class="hdr">
+    <div><div class="hdr-logo">LIVE!</div><div class="hdr-loja">Azevedo Sodré</div></div>
+    <div class="hdr-right"><div class="hdr-hora" id="ok-hora-hdr">--:--</div></div>
+  </div>
+  <div class="bdy">
+    <div class="ok-box">
+      <div class="ok-ico" id="ok-ico">✅</div>
+      <div class="ok-title" id="ok-title"></div>
+      <div class="ok-sub" id="ok-sub"></div>
+      <div class="ok-prox" id="ok-prox"></div>
+      <div class="ok-turno" id="ok-turno"></div>
+    </div>
+    <button class="btn-reg" onclick="showScreen('s-form')">Novo registro</button>
+  </div>
+</div>
+
+<div id="s-hist" class="screen">
+  <div class="hdr">
+    <div><div class="hdr-logo">LIVE!</div><div class="hdr-loja">Azevedo Sodré — hoje</div></div>
+    <div class="hdr-right"><div class="hdr-hora" id="h-hora">--:--</div></div>
+  </div>
+  <div class="bdy">
+    <div id="hist-lista"></div>
+    <div class="dvd"></div>
+    <div class="nav-row"><button class="btn-sm" onclick="showScreen('s-form')">← Voltar</button></div>
+  </div>
+</div>
+
+</div>
+<script>
+const LOJA_KEY = 'Azevedo Sodré';
+const LOJA_TITULO = 'Azevedo Sodré';
+const TURNOS = ['entrada','saida_almoco','retorno_almoco','saida'];
+const TINFO = {
+  entrada:        {l:'Entrada',        i:'🟢', b:'b-e', p:'Próximo: Saída p/ Almoço'},
+  saida_almoco:   {l:'Saída Almoço',   i:'🍽️', b:'b-a', p:'Próximo: Retorno do Almoço'},
+  retorno_almoco: {l:'Retorno Almoço', i:'🔄', b:'b-r', p:'Próximo: Saída'},
+  saida:          {l:'Saída',          i:'🔴', b:'b-s', p:'Turno completo ✓'}
+};
+const DIAS_SEMANA = ['Domingo','Segunda-feira','Terça-feira','Quarta-feira','Quinta-feira','Sexta-feira','Sábado'];
+
+function getHoje(){return new Date().toISOString().slice(0,10);}
+function getNow(){const d=new Date();return d.getHours().toString().padStart(2,'0')+':'+d.getMinutes().toString().padStart(2,'0');}
+function getDiaSemana(){return new Date().getDay();}
+function getDataFmt(){return new Date().toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric'});}
+
+function isFeriado(){
+  try{const f=JSON.parse(localStorage.getItem('feriados_live')||'{}');return f[getHoje()]||null;}catch(e){return null;}
+}
+
+function toMins(h){if(!h)return null;const[hh,mm]=h.split(':').map(Number);return hh*60+mm;}
+function minsToStr(m){if(m===null||isNaN(m))return null;const neg=m<0;const abs=Math.abs(m);return(neg?'-':'')+Math.floor(abs/60)+'h'+(abs%60>0?(abs%60).toString().padStart(2,'0'):'');}
+
+function detectarTurno(horaEntrada, diaSemana, feriado){
+  const mins=toMins(horaEntrada);
+  if(LOJA_KEY==='Bioritmo'){
+    if(diaSemana===6||feriado) return{turno:'especial',entrada:'08:00',saida:'13:00',almoco:0,label:'Sáb/Feriado (8h–13h)'};
+    if(mins<10*60) return{turno:'manha',entrada:'07:00',saida:'15:00',almoco:60,label:'Manhã (7h–15h)'};
+    return{turno:'tarde',entrada:'13:00',saida:'21:00',almoco:60,label:'Tarde (13h–21h)'};
+  }
+  if(LOJA_KEY==='Azevedo Sodré'){
+    if(mins<9*60+30) return{turno:'manha',entrada:'08:30',saida:'16:50',almoco:60,label:'Manhã (8h30–16h50)'};
+    if(mins<11*60+30) return{turno:'intermediario',entrada:'10:30',saida:'18:50',almoco:60,label:'Intermediário (10h30–18h50)'};
+    return{turno:'tarde',entrada:'12:00',saida:'20:00',almoco:60,label:'Tarde (12h–20h)'};
+  }
+  if(diaSemana===0||feriado) return{turno:'dom_feriado',entrada:'14:30',saida:'21:00',almoco:30,label:'Dom/Feriado (14h30–21h)'};
+  if(mins<11*60) return{turno:'manha',entrada:'09:40',saida:'18:00',almoco:60,label:'Manhã (9h40–18h)'};
+  if(mins<13*60) return{turno:'intermediario',entrada:'11:40',saida:'20:00',almoco:60,label:'Intermediário (11h40–20h)'};
+  return{turno:'tarde',entrada:'13:50',saida:'22:10',almoco:60,label:'Tarde (13h50–22h10)'};
+}
+
+function calcHoras(regs){
+  const e=regs.find(r=>r.tipo==='entrada');
+  const s=regs.find(r=>r.tipo==='saida');
+  if(!e||!s) return null;
+  const feriado=isFeriado();
+  const ti=detectarTurno(e.hora, getDiaSemana(), feriado);
+  const eR=toMins(e.hora),sR=toMins(s.hora);
+  const sA=toMins(regs.find(r=>r.tipo==='saida_almoco')?.hora);
+  const rA=toMins(regs.find(r=>r.tipo==='retorno_almoco')?.hora);
+  let trab=sR-eR;
+  if(sA&&rA) trab-=(rA-sA); else trab-=ti.almoco;
+  const prev=(toMins(ti.saida)-toMins(ti.entrada))-ti.almoco;
+  const extra=trab-prev;
+  return{trabalhado:minsToStr(trab),previsto:minsToStr(prev),extra:minsToStr(extra),extraMins:extra,turnoLabel:ti.label};
+}
+
+function sKey(){return 'ponto_'+LOJA_KEY+'_'+getHoje();}
+function load(){try{const r=localStorage.getItem(sKey());return r?JSON.parse(r):[];}catch(e){return[];}}
+function save(arr){try{localStorage.setItem(sKey(),JSON.stringify(arr));}catch(e){}}
+function getVendRegs(v){return load().filter(r=>r.vend===v);}
+
+function updateClock(){
+  const t=getNow();
+  document.querySelectorAll('.hdr-hora').forEach(el=>el.textContent=t);
+  document.getElementById('f-data').textContent=getDataFmt();
+}
+setInterval(updateClock,1000);updateClock();
+
+function updateDiaInfo(){
+  const dia=getDiaSemana();
+  const feriado=isFeriado();
+  const nomeDia=DIAS_SEMANA[dia];
+  let cls='dia-normal',txt=nomeDia;
+  if(feriado){cls='dia-feriado';txt='🎉 Feriado: '+feriado+' ('+nomeDia+')';}
+  else if(dia===0){cls='dia-domingo';txt='☀️ Domingo';}
+  else if(dia===6){cls='dia-sabado';txt='🌿 Sábado';}
+  document.getElementById('dia-info').innerHTML=`<div class="dia-badge ${cls}">${txt}</div>`;
+  const fb=document.getElementById('feriado-bar');
+  if(feriado){fb.style.display='flex';document.getElementById('feriado-nome-bar').textContent=feriado;}
+  else fb.style.display='none';
+}
+updateDiaInfo();
+
+let selTurno=null;
+function onVendChange(){
+  selTurno=null;
+  document.getElementById('btn-reg').disabled=true;
+  const vend=document.getElementById('f-vend').value;
+  const feitos=vend?getVendRegs(vend).map(r=>r.tipo):[];
+  TURNOS.forEach(t=>{
+    const btn=document.getElementById('tb-'+t);
+    const lbl=document.getElementById('tl-'+t);
+    btn.className='tb';
+    if(feitos.includes(t)){
+      btn.classList.add('done');
+      const hr=load().find(r=>r.vend===vend&&r.tipo===t);
+      lbl.textContent=TINFO[t].l+(hr?' '+hr.hora:'');
+    } else {
+      lbl.textContent=TINFO[t].l;
+    }
+  });
+}
+
+function selT(tipo){
+  const vend=document.getElementById('f-vend').value;
+  if(!vend){alert('Selecione seu nome primeiro.');return;}
+  if(getVendRegs(vend).find(r=>r.tipo===tipo)) return;
+  TURNOS.forEach(t=>{const b=document.getElementById('tb-'+t);if(!b.classList.contains('done'))b.classList.remove('sel');});
+  document.getElementById('tb-'+tipo).classList.add('sel');
+  selTurno=tipo;
+  document.getElementById('btn-reg').disabled=false;
+}
+
+function registrar(){
+  const vend=document.getElementById('f-vend').value;
+  if(!vend||!selTurno) return;
+  const hora=getNow();
+  const arr=load();
+  arr.push({loja:LOJA_KEY,vend,tipo:selTurno,hora,data:getHoje(),original:true});
+  save(arr);
+  const info=TINFO[selTurno];
+  document.getElementById('ok-ico').textContent=info.i;
+  document.getElementById('ok-title').textContent=info.l+' registrada!';
+  document.getElementById('ok-sub').textContent=vend+' — '+hora;
+  document.getElementById('ok-prox').textContent=info.p;
+  if(selTurno==='entrada'){
+    const feriado=isFeriado();
+    const ti=detectarTurno(hora,getDiaSemana(),feriado);
+    document.getElementById('ok-turno').textContent='Turno detectado: '+ti.label;
+  } else {
+    document.getElementById('ok-turno').textContent='';
+  }
+  showScreen('s-ok');
+}
+
+function renderHist(){
+  const arr=load();
+  const ag={};
+  arr.forEach(r=>{if(!ag[r.vend])ag[r.vend]=[];ag[r.vend].push(r);});
+  const el=document.getElementById('hist-lista');
+  const keys=Object.keys(ag);
+  if(!keys.length){el.innerHTML='<div class="empty">Nenhum registro hoje.</div>';return;}
+  el.innerHTML=keys.map(v=>{
+    const regs=ag[v];
+    const badges=TURNOS.map(t=>{
+      const r=regs.find(x=>x.tipo===t);
+      const editado=r&&r.editado?'*':'';
+      return r?`<span class="badge ${TINFO[t].b}">${TINFO[t].l} ${r.hora}${editado}</span>`:`<span class="badge b-p">${TINFO[t].l} —</span>`;
+    }).join('');
+    const h=calcHoras(regs);
+    let horasHtml='';
+    if(h){
+      const exCls=h.extraMins>0?'extra-pos':h.extraMins<0?'extra-neg':'';
+      horasHtml=`<div class="hist-horas">⏱ ${h.trabalhado} trabalhadas · Previsto: ${h.previsto} · <span class="${exCls}">Extra: ${h.extra}</span> · <span style="color:#aaa">${h.turnoLabel}</span></div>`;
+    }
+    return`<div class="hist-card"><div class="hist-nome">${v}</div><div class="hist-turno">&nbsp;</div><div class="hist-badges">${badges}</div>${horasHtml}</div>`;
+  }).join('');
+}
+
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  if(id==='s-form')onVendChange();
+  if(id==='s-hist')renderHist();
+}
+</script>
+</body>
+</html>

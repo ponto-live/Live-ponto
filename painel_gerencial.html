@@ -1,0 +1,1172 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LIVE! Painel Gerencial</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f2f2f2;min-height:100vh;padding:16px}
+.wrap{max-width:1000px;margin:0 auto}
+
+/* HEADER */
+.hdr{background:#1a1a1a;color:#f0c000;padding:14px 20px;border-radius:12px 12px 0 0;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px}
+.hdr-logo{font-size:22px;font-weight:700;letter-spacing:2px}
+.hdr-sub{font-size:11px;color:#aaa;margin-top:2px}
+.hdr-hora{font-size:20px;font-weight:600;color:#f0c000}
+.hdr-data{font-size:11px;color:#aaa;margin-top:2px;text-align:right}
+.bdy{background:#fff;border:1px solid #e0e0e0;border-top:none;border-radius:0 0 12px 12px;padding:20px}
+
+/* SENHA */
+.senha-overlay{position:fixed;inset:0;background:rgba(0,0,0,.65);display:flex;align-items:center;justify-content:center;z-index:9999}
+.senha-box{background:#fff;border-radius:14px;padding:30px;width:300px;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,.18)}
+.senha-ico{font-size:36px;margin-bottom:10px}
+.senha-titulo{font-size:16px;font-weight:600;margin-bottom:4px}
+.senha-sub{font-size:12px;color:#888;margin-bottom:18px}
+.senha-input{width:100%;padding:12px;border:1px solid #ddd;border-radius:8px;font-size:20px;text-align:center;letter-spacing:8px;margin-bottom:10px}
+.senha-btn{width:100%;padding:12px;background:#1a1a1a;color:#f0c000;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer}
+.senha-erro{color:#b83232;font-size:12px;margin-top:8px;display:none}
+
+/* NAV ABAS PRINCIPAIS */
+.nav-principal{display:flex;gap:0;margin-bottom:20px;border-bottom:2px solid #f0f0f0}
+.nav-tab{padding:10px 20px;font-size:13px;cursor:pointer;border:none;background:transparent;color:#888;font-weight:500;border-bottom:2px solid transparent;margin-bottom:-2px}
+.nav-tab.active{color:#1a1a1a;border-bottom-color:#f0c000;font-weight:600}
+
+/* TOP BAR */
+.top-bar{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;align-items:center;justify-content:space-between}
+.top-bar-left{display:flex;gap:8px;flex-wrap:wrap}
+.btn-act{padding:8px 14px;border-radius:8px;font-size:12px;cursor:pointer;border:1px solid #e0e0e0;background:#fff;color:#444;white-space:nowrap}
+.btn-act:hover{background:#f5f5f5}
+.btn-feriado{border-color:#e65c00;color:#e65c00}
+.btn-export{border-color:#1a7a3c;color:#1a7a3c}
+
+/* FERIADO ATIVO */
+.feriado-bar{background:#fff3e0;border:1px solid #e65c00;border-radius:8px;padding:8px 14px;font-size:12px;color:#e65c00;display:flex;align-items:center;gap:8px;margin-bottom:12px}
+
+/* STATS */
+.stat-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:16px}
+.stat{background:#f8f8f8;border-radius:8px;padding:10px 12px;text-align:center}
+.stat-val{font-size:22px;font-weight:700;color:#1a1a1a}
+.stat-lbl{font-size:10px;color:#888;margin-top:2px}
+
+/* ALERTAS */
+.sec-titulo{font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;margin-top:16px}
+.alerta-row{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:6px;font-size:12px;margin-bottom:4px}
+.al-warn{background:#fff8e1;color:#7a5500}
+.al-danger{background:#fdecea;color:#b83232}
+.al-ok{background:#f0f9f0;color:#2a6e2a}
+
+/* TABS LOJAS */
+.tabs{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap}
+.tab{padding:6px 14px;border:1px solid #e0e0e0;border-radius:20px;background:transparent;color:#666;font-size:12px;cursor:pointer}
+.tab.active{background:#1a1a1a;color:#f0c000;border-color:#1a1a1a}
+
+/* LOJA SECTION */
+.loja-sec{margin-bottom:14px;border:1px solid #ececec;border-radius:10px;overflow:hidden}
+.loja-hdr{background:#f5f5f5;padding:10px 14px;display:flex;justify-content:space-between;align-items:center}
+.loja-nome{font-size:13px;font-weight:600;color:#1a1a1a}
+.loja-resumo{font-size:11px;color:#888}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px;vertical-align:middle}
+.dot-ok{background:#3a9c5f}.dot-warn{background:#e0a000}.dot-none{background:#ccc}
+
+/* VEND ROW */
+.vend-row{display:grid;grid-template-columns:190px 1fr auto;align-items:center;gap:8px;padding:9px 14px;border-top:1px solid #f5f5f5}
+.vend-nome{font-size:12px;font-weight:500;color:#1a1a1a}
+.vend-cargo{font-size:10px;color:#aaa}
+.vend-badges{display:flex;gap:3px;flex-wrap:wrap;align-items:center}
+.badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:500}
+.b-e{background:#d4edda;color:#1a5c2e}.b-a{background:#fff3cd;color:#7a5500}
+.b-r{background:#d1ecf1;color:#0c5460}.b-s{background:#f8d7da;color:#7a2025}
+.b-p{background:#f0f0f0;color:#bbb}.b-folga{background:#e8f5e9;color:#2e7d32}
+.b-atestado{background:#e3f2fd;color:#1565c0}.b-falta-j{background:#fff3e0;color:#e65c00}
+.b-falta-i{background:#fdecea;color:#b83232}.b-ferias{background:#f3e5f5;color:#6a1b9a}
+.b-licenca{background:#fce4ec;color:#880e4f}.b-outro{background:#f5f5f5;color:#555}
+.badge-edit{background:#e8eaf6;color:#3949ab;font-size:9px}
+.extra-pos{color:#1a7a3c;font-weight:600;font-size:10px}
+.extra-neg{color:#b83232;font-weight:600;font-size:10px}
+.btn-edit{padding:5px 10px;border:1px solid #e0e0e0;border-radius:6px;background:#fff;font-size:11px;cursor:pointer;color:#555;white-space:nowrap}
+.btn-edit:hover{background:#f0f0f0}
+
+/* MODAL GERAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:center;justify-content:center;z-index:998;padding:16px}
+.modal-overlay.open{display:flex}
+.modal{background:#fff;border-radius:12px;padding:24px;width:500px;max-width:100%;max-height:90vh;overflow-y:auto}
+.modal h3{font-size:15px;font-weight:600;margin-bottom:4px}
+.modal .modal-sub{font-size:12px;color:#888;margin-bottom:16px}
+.field-label{font-size:11px;color:#888;display:block;margin-bottom:3px;margin-top:10px}
+.field-input{width:100%;padding:9px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px}
+.field-input:disabled{background:#f5f5f5;color:#aaa}
+.field-select{width:100%;padding:9px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;background:#fff}
+.field-textarea{width:100%;padding:9px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;resize:vertical;min-height:60px}
+.modal-grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.modal-btns{display:flex;gap:8px;margin-top:16px}
+.btn-save{flex:1;padding:11px;background:#1a1a1a;color:#f0c000;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer}
+.btn-cancel{padding:11px 16px;background:transparent;border:1px solid #e0e0e0;border-radius:8px;font-size:13px;cursor:pointer;color:#666}
+.dvd{border:none;border-top:1px solid #f0f0f0;margin:14px 0}
+.ocorr-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:4px}
+.ocorr-btn{padding:8px;border:1.5px solid #e0e0e0;border-radius:8px;background:#fafafa;font-size:11px;cursor:pointer;text-align:center;transition:all .12s}
+.ocorr-btn.sel{border-color:#1a1a1a;background:#1a1a1a;color:#f0c000}
+.ocorr-btn span{display:block;font-size:18px;margin-bottom:3px}
+
+/* LOG */
+.log-row{font-size:11px;color:#555;padding:5px 0;border-bottom:1px solid #f5f5f5;display:grid;grid-template-columns:60px 1fr}
+.log-hora{color:#aaa}
+
+/* ESCALA MENSAL */
+.escala-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px}
+.mes-nav{display:flex;align-items:center;gap:10px}
+.mes-nav button{padding:6px 12px;border:1px solid #e0e0e0;border-radius:6px;background:#fff;cursor:pointer;font-size:13px}
+.mes-titulo{font-size:15px;font-weight:600;min-width:160px;text-align:center}
+.escala-loja-sec{margin-bottom:20px;border:1px solid #ececec;border-radius:10px;overflow:hidden}
+.escala-loja-hdr{background:#1a1a1a;color:#f0c000;padding:9px 14px;font-size:13px;font-weight:600}
+.escala-table-wrap{overflow-x:auto}
+.escala-table{width:100%;border-collapse:collapse;font-size:11px;min-width:700px}
+.escala-table th{background:#f5f5f5;padding:6px 4px;text-align:center;border:1px solid #ececec;font-weight:500;font-size:10px;white-space:nowrap}
+.escala-table th.nome-col{text-align:left;min-width:140px;padding-left:10px}
+.escala-table td{padding:4px 3px;text-align:center;border:1px solid #f0f0f0;cursor:pointer}
+.escala-table td.nome-td{text-align:left;padding-left:10px;font-weight:500;color:#1a1a1a;cursor:default;white-space:nowrap}
+.escala-table td:hover:not(.nome-td){background:#f5f5f5}
+.ec-folga{background:#e8f5e9;color:#2e7d32;font-size:10px;border-radius:3px;padding:1px 3px}
+.ec-atestado{background:#e3f2fd;color:#1565c0;font-size:10px;border-radius:3px;padding:1px 3px}
+.ec-falta-j{background:#fff3e0;color:#e65c00;font-size:10px;border-radius:3px;padding:1px 3px}
+.ec-falta-i{background:#fdecea;color:#b83232;font-size:10px;border-radius:3px;padding:1px 3px}
+.ec-ferias{background:#f3e5f5;color:#6a1b9a;font-size:10px;border-radius:3px;padding:1px 3px}
+.ec-licenca{background:#fce4ec;color:#880e4f;font-size:10px;border-radius:3px;padding:1px 3px}
+.ec-trab{background:#f8f8f8;color:#aaa;font-size:9px;border-radius:3px;padding:1px 3px}
+.ec-hoje{background:#fff9e0 !important}
+.ec-dom{background:#fafafa;color:#ddd}
+.ec-fechado{background:#f5f5f5;color:#ddd;cursor:default!important}
+.legend{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.legend-item{display:flex;align-items:center;gap:4px;font-size:10px;color:#555}
+.legend-dot{width:10px;height:10px;border-radius:2px}
+
+/* GESTÃO DE EQUIPE */
+.equipe-loja-sec{margin-bottom:16px;border:1px solid #ececec;border-radius:10px;overflow:hidden}
+.equipe-loja-hdr{background:#1a1a1a;color:#f0c000;padding:9px 14px;display:flex;justify-content:space-between;align-items:center}
+.equipe-loja-titulo{font-size:13px;font-weight:600}
+.equipe-add-btn{padding:4px 12px;background:transparent;border:1px solid #f0c000;color:#f0c000;border-radius:6px;font-size:11px;cursor:pointer}
+.equipe-add-btn:hover{background:#f0c000;color:#1a1a1a}
+.equipe-row{display:grid;grid-template-columns:1fr auto auto;align-items:center;gap:10px;padding:10px 14px;border-top:1px solid #f5f5f5}
+.equipe-info .eq-nome{font-size:13px;font-weight:500;color:#1a1a1a}
+.equipe-info .eq-cargo{font-size:11px;color:#aaa}
+.equipe-info .eq-status{font-size:10px;margin-top:2px}
+.eq-ativa{color:#1a7a3c;font-weight:500}
+.eq-inativa{color:#b83232;font-weight:500}
+.eq-inativa-row{opacity:.5;background:#fafafa}
+.eq-actions{display:flex;gap:6px}
+.eq-btn{padding:5px 10px;border:1px solid #e0e0e0;border-radius:6px;background:#fff;font-size:11px;cursor:pointer;color:#555}
+.eq-btn:hover{background:#f0f0f0}
+.eq-btn-danger{border-color:#f8d7da;color:#b83232}
+.eq-btn-danger:hover{background:#fdecea}
+.eq-btn-success{border-color:#d4edda;color:#1a7a3c}
+.eq-btn-success:hover{background:#d4edda}
+.eq-demit-badge{display:inline-block;padding:2px 7px;border-radius:10px;font-size:10px;background:#fdecea;color:#b83232;margin-left:6px}
+.eq-data-saida{font-size:10px;color:#b83232;margin-top:2px}
+
+/* BANCO DE HORAS */
+.banco-table{width:100%;border-collapse:collapse;font-size:12px;margin-top:8px}
+.banco-table th{background:#f5f5f5;padding:8px 10px;text-align:left;border-bottom:1px solid #e0e0e0;font-size:11px;color:#666}
+.banco-table td{padding:8px 10px;border-bottom:1px solid #f5f5f5}
+.banco-table tr:hover td{background:#fafafa}
+.banco-pos{color:#1a7a3c;font-weight:600}
+.banco-neg{color:#b83232;font-weight:600}
+.banco-zero{color:#888}
+
+/* MODAL CÉLULA ESCALA */
+.cel-modal{background:#fff;border-radius:12px;padding:20px;width:320px;max-width:100%}
+.cel-modal h3{font-size:14px;font-weight:600;margin-bottom:3px}
+.cel-modal .sub{font-size:11px;color:#888;margin-bottom:14px}
+.cel-opts{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:12px}
+.cel-opt{padding:8px;border:1.5px solid #e0e0e0;border-radius:8px;background:#fafafa;font-size:11px;cursor:pointer;text-align:center}
+.cel-opt:hover{background:#f0f0f0}
+.cel-opt.sel{border-color:#1a1a1a;background:#1a1a1a;color:#f0c000}
+.cel-opt span{display:block;font-size:16px;margin-bottom:2px}
+</style>
+</head>
+<body>
+
+<!-- SENHA -->
+<div class="senha-overlay" id="senha-overlay">
+  <div class="senha-box">
+    <div class="senha-ico">🔐</div>
+    <div class="senha-titulo">Painel Gerencial</div>
+    <div class="senha-sub">LIVE! Controle de Ponto</div>
+    <input class="senha-input" type="password" id="senha-input" placeholder="••••••" maxlength="10" onkeydown="if(event.key==='Enter')verificaSenha()">
+    <button class="senha-btn" onclick="verificaSenha()">Entrar</button>
+    <div class="senha-erro" id="senha-erro">Senha incorreta.</div>
+  </div>
+</div>
+
+<!-- MODAL EDIÇÃO/OCORRÊNCIA -->
+<div class="modal-overlay" id="modal-edit">
+  <div class="modal">
+    <h3 id="modal-titulo">Editar ponto</h3>
+    <div class="modal-sub" id="modal-sub"></div>
+    <div style="margin-bottom:12px;display:flex;align-items:center;gap:10px;background:#f8f8f8;padding:8px 12px;border-radius:8px">
+      <label style="font-size:11px;color:#888;white-space:nowrap">📅 Data do registro</label>
+      <input type="date" class="field-input" id="ed-data" style="max-width:160px;margin:0">
+    </div>
+    <div class="dvd" style="margin-top:0"></div>
+    <div style="font-size:11px;color:#888;margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">Tipo</div>
+    <div class="ocorr-grid" id="ocorr-grid">
+      <button class="ocorr-btn sel" id="ocorr-normal" onclick="selOcorr('normal')"><span>🕐</span>Horário normal</button>
+      <button class="ocorr-btn" id="ocorr-folga" onclick="selOcorr('folga')"><span>🌴</span>Folga</button>
+      <button class="ocorr-btn" id="ocorr-atestado" onclick="selOcorr('atestado')"><span>🏥</span>Atestado</button>
+      <button class="ocorr-btn" id="ocorr-falta-j" onclick="selOcorr('falta-j')"><span>⚠️</span>Falta justif.</button>
+      <button class="ocorr-btn" id="ocorr-falta-i" onclick="selOcorr('falta-i')"><span>❌</span>Falta injustif.</button>
+      <button class="ocorr-btn" id="ocorr-ferias" onclick="selOcorr('ferias')"><span>🏖️</span>Férias</button>
+      <button class="ocorr-btn" id="ocorr-licenca" onclick="selOcorr('licenca')"><span>🤰</span>Licença</button>
+      <button class="ocorr-btn" id="ocorr-outro" onclick="selOcorr('outro')"><span>📋</span>Outro</button>
+    </div>
+    <div id="horarios-section">
+      <div class="dvd"></div>
+      <div style="font-size:11px;color:#888;margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">Horários</div>
+      <div class="modal-grid2">
+        <div><label class="field-label">🟢 Entrada</label><input type="time" class="field-input" id="ed-entrada"></div>
+        <div><label class="field-label">🍽️ Saída Almoço</label><input type="time" class="field-input" id="ed-saida_almoco"></div>
+        <div><label class="field-label">🔄 Retorno Almoço</label><input type="time" class="field-input" id="ed-retorno_almoco"></div>
+        <div><label class="field-label">🔴 Saída</label><input type="time" class="field-input" id="ed-saida"></div>
+      </div>
+    </div>
+    <div class="dvd"></div>
+    <label class="field-label">📝 Motivo da alteração (obrigatório)</label>
+    <textarea class="field-textarea" id="ed-obs" placeholder="Ex: Funcionária esqueceu de bater entrada..."></textarea>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeModal('modal-edit')">Cancelar</button>
+      <button class="btn-save" onclick="salvarEdicao()">💾 Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL ADICIONAR/EDITAR VENDEDORA -->
+<div class="modal-overlay" id="modal-equipe">
+  <div class="modal" style="width:400px">
+    <h3 id="eq-modal-titulo">Nova colaboradora</h3>
+    <div class="modal-sub" id="eq-modal-sub">Preencha os dados.</div>
+    <label class="field-label">Nome completo</label>
+    <input type="text" class="field-input" id="eq-nome" placeholder="Ex: Ana Paula Santos">
+    <label class="field-label">Cargo</label>
+    <select class="field-select" id="eq-cargo">
+      <option value="Vendedora">Vendedora</option>
+      <option value="Vendedor">Vendedor</option>
+      <option value="Auxiliar de Loja">Auxiliar de Loja</option>
+      <option value="Auxiliar">Auxiliar</option>
+      <option value="Gerente">Gerente</option>
+    </select>
+    <label class="field-label">Loja</label>
+    <select class="field-select" id="eq-loja">
+      <option value="Praiamar Shopping">Praiamar Shopping</option>
+      <option value="Miramar Shopping">Miramar Shopping</option>
+      <option value="Azevedo Sodre">Azevedo Sodre</option>
+      <option value="Litoral Plaza">Litoral Plaza</option>
+      <option value="Bioritmo">Bioritmo</option>
+    </select>
+    <label class="field-label">Data de admissao</label>
+    <input type="date" class="field-input" id="eq-admissao">
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeModal('modal-equipe')">Cancelar</button>
+      <button class="btn-save" id="eq-save-btn" onclick="salvarEquipe()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL DESATIVAR -->
+<div class="modal-overlay" id="modal-desativar">
+  <div class="modal" style="width:380px">
+    <h3>Desativar colaboradora</h3>
+    <div class="modal-sub" id="desativar-sub"></div>
+    <label class="field-label">Motivo</label>
+    <select class="field-select" id="desativar-motivo">
+      <option value="demissao">Demissao (sem justa causa)</option>
+      <option value="demissao-justa">Demissao por justa causa</option>
+      <option value="pedido">Pedido de demissao</option>
+      <option value="acordo">Acordo</option>
+      <option value="fim-contrato">Fim de contrato</option>
+    </select>
+    <label class="field-label">Data de saida</label>
+    <input type="date" class="field-input" id="desativar-data">
+    <label class="field-label">Observacao</label>
+    <textarea class="field-textarea" id="desativar-obs" placeholder="Opcional..."></textarea>
+    <div style="background:#fff8e1;border:1px solid #ffe082;border-radius:6px;padding:10px;font-size:11px;color:#7a5500;margin-top:12px">
+      A colaboradora ficara visivel como inativa ate o fim do mes para fechamento da folha.
+    </div>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeModal('modal-desativar')">Cancelar</button>
+      <button class="btn-save" style="background:#b83232" onclick="confirmarDesativar()">Desativar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL FERIADO -->
+<div class="modal-overlay" id="modal-feriado">
+  <div class="modal" style="width:360px">
+    <h3>🎉 Gerenciar Feriados</h3>
+    <div class="modal-sub">Feriados ativam horário especial em todas as lojas.</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+      <div><label class="field-label">Data</label><input type="date" class="field-input" id="feriado-data"></div>
+      <div><label class="field-label">Nome</label><input type="text" class="field-input" id="feriado-nome" placeholder="Ex: Corpus Christi"></div>
+    </div>
+    <button class="btn-save" style="width:100%;margin-bottom:12px" onclick="addFeriado()">+ Cadastrar</button>
+    <div id="feriado-lista" style="max-height:200px;overflow-y:auto"></div>
+    <button class="btn-cancel" style="width:100%;margin-top:10px" onclick="closeModal('modal-feriado')">Fechar</button>
+  </div>
+</div>
+
+<!-- MODAL CÉLULA ESCALA -->
+<div class="modal-overlay" id="modal-cel">
+  <div class="cel-modal">
+    <h3 id="cel-titulo">Marcar dia</h3>
+    <div class="sub" id="cel-sub"></div>
+    <div class="cel-opts" id="cel-opts">
+      <button class="cel-opt" onclick="salvarCel('trab')"><span>💼</span>Trabalhou</button>
+      <button class="cel-opt" onclick="salvarCel('folga')"><span>🌴</span>Folga</button>
+      <button class="cel-opt" onclick="salvarCel('atestado')"><span>🏥</span>Atestado</button>
+      <button class="cel-opt" onclick="salvarCel('falta-j')"><span>⚠️</span>Falta justif.</button>
+      <button class="cel-opt" onclick="salvarCel('falta-i')"><span>❌</span>Falta injustif.</button>
+      <button class="cel-opt" onclick="salvarCel('ferias')"><span>🏖️</span>Férias</button>
+      <button class="cel-opt" onclick="salvarCel('licenca')"><span>🤰</span>Licença</button>
+      <button class="cel-opt" onclick="salvarCel('')"><span>🗑️</span>Limpar</button>
+    </div>
+    <button class="btn-cancel" style="width:100%;margin-top:6px" onclick="closeModal('modal-cel')">Cancelar</button>
+  </div>
+</div>
+
+<div class="wrap">
+<div class="hdr">
+  <div><div class="hdr-logo">LIVE!</div><div class="hdr-sub">Painel Gerencial — Controle de Ponto</div></div>
+  <div><div class="hdr-hora" id="g-hora">--:--</div><div class="hdr-data" id="g-data"></div></div>
+</div>
+<div class="bdy">
+
+  <div class="nav-principal">
+    <button class="nav-tab active" onclick="setNavTab('hoje',this)">📋 Hoje</button>
+    <button class="nav-tab" onclick="setNavTab('escala',this)">📅 Escala Mensal</button>
+    <button class="nav-tab" onclick="setNavTab('banco',this)">⏱️ Banco de Horas</button>
+    <button class="nav-tab" onclick="setNavTab('log',this)">📝 Log</button>
+    <button class="nav-tab" onclick="setNavTab('equipe',this)">👥 Equipe</button>
+  </div>
+
+  <!-- ABA HOJE -->
+  <div id="aba-hoje">
+    <div class="top-bar">
+      <div class="top-bar-left">
+        <button class="btn-act btn-feriado" onclick="openModal('modal-feriado');renderFeriadoLista()">🎉 Feriados</button>
+        <button class="btn-act btn-export" onclick="exportarExcelDia()">📊 Exportar dia</button>
+        <button class="btn-act" onclick="render()">↻ Atualizar</button>
+      </div>
+      <div style="font-size:11px;color:#aaa">Atualiza a cada 30s</div>
+    </div>
+    <div id="feriado-ativo-bar"></div>
+    <div class="stat-grid" id="stats"></div>
+    <div class="sec-titulo">Alertas</div>
+    <div id="alertas" style="margin-bottom:16px"></div>
+    <div class="tabs" id="tabs">
+      <button class="tab active" onclick="setFiltro('Todas',this)">Todas</button>
+      <button class="tab" onclick="setFiltro('Praiamar',this)">Praiamar</button>
+      <button class="tab" onclick="setFiltro('Miramar',this)">Miramar</button>
+      <button class="tab" onclick="setFiltro('Azevedo',this)">Azevedo</button>
+      <button class="tab" onclick="setFiltro('Litoral',this)">Litoral Plaza</button>
+      <button class="tab" onclick="setFiltro('Bioritmo',this)">Bioritmo</button>
+    </div>
+    <div id="lojas-container"></div>
+  </div>
+
+  <!-- ABA ESCALA -->
+  <div id="aba-escala" style="display:none">
+    <div class="escala-header">
+      <div class="mes-nav">
+        <button onclick="mudarMes(-1)">◀</button>
+        <div class="mes-titulo" id="escala-mes-titulo"></div>
+        <button onclick="mudarMes(1)">▶</button>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn-act btn-export" onclick="exportarExcelMes()">📊 Exportar mês</button>
+      </div>
+    </div>
+    <div class="legend">
+      <div class="legend-item"><div class="legend-dot" style="background:#e8f5e9"></div>Folga</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#e3f2fd"></div>Atestado</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#fff3e0"></div>Falta justif.</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#fdecea"></div>Falta injustif.</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#f3e5f5"></div>Férias</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#fce4ec"></div>Licença</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#fff9e0;border:1px solid #f0c000"></div>Hoje</div>
+    </div>
+    <div id="escala-container"></div>
+  </div>
+
+  <!-- ABA BANCO DE HORAS -->
+  <div id="aba-banco" style="display:none">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+      <div class="mes-nav">
+        <button onclick="mudarMesBanco(-1)">◀</button>
+        <div class="mes-titulo" id="banco-mes-titulo"></div>
+        <button onclick="mudarMesBanco(1)">▶</button>
+      </div>
+      <button class="btn-act btn-export" onclick="exportarExcelBanco()">📊 Exportar banco</button>
+    </div>
+    <div class="tabs" id="tabs-banco">
+      <button class="tab active" onclick="setFiltroBanco('Todas',this)">Todas</button>
+      <button class="tab" onclick="setFiltroBanco('Praiamar',this)">Praiamar</button>
+      <button class="tab" onclick="setFiltroBanco('Miramar',this)">Miramar</button>
+      <button class="tab" onclick="setFiltroBanco('Azevedo',this)">Azevedo</button>
+      <button class="tab" onclick="setFiltroBanco('Litoral',this)">Litoral Plaza</button>
+      <button class="tab" onclick="setFiltroBanco('Bioritmo',this)">Bioritmo</button>
+    </div>
+    <div id="banco-container"></div>
+  </div>
+
+  <!-- ABA EQUIPE -->
+  <div id="aba-equipe" style="display:none">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px">
+      <div style="font-size:13px;font-weight:500;color:#1a1a1a">Gestao da equipe — adicione, edite ou desative colaboradoras</div>
+      <button class="btn-act" style="border-color:#1a7a3c;color:#1a7a3c" onclick="abrirNovaVend()">+ Nova colaboradora</button>
+    </div>
+    <div id="equipe-container"></div>
+  </div>
+
+  <!-- ABA LOG -->
+  <div id="aba-log" style="display:none">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap">
+      <div style="font-size:13px;font-weight:500;color:#1a1a1a">📝 Log de alterações</div>
+      <input type="date" id="log-data-input" class="field-input" style="max-width:160px;margin:0" onchange="renderLog()">
+      <button class="btn-act" onclick="document.getElementById('log-data-input').value=getHoje();renderLog()">Hoje</button>
+      <button class="btn-act" onclick="logDiaAnterior()">◀ Dia anterior</button>
+      <button class="btn-act" onclick="logDiaSeguinte()">Dia seguinte ▶</button>
+    </div>
+    <div id="log-container"></div>
+  </div>
+
+</div>
+</div>
+
+<script>
+const SENHA = '060482';
+const DIAS_SEMANA = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+const LOJAS_CFG = [
+  {nome:'Praiamar Shopping',key:'Praiamar Shopping',pessoas:[
+    {nome:'André Luiz dos Anjos',cargo:'Vendedor'},
+    {nome:'Izabelle Cristhina Coelho Chaves',cargo:'Vendedora'},
+    {nome:'Mariana Araujo de Oliveira',cargo:'Vendedora'},
+    {nome:'Rafaela Carvalho Santos',cargo:'Auxiliar de Loja'},
+    {nome:'Bianca Gomes Moreno',cargo:'Vendedora'},
+    {nome:'Daniele Miguel Ferreira',cargo:'Vendedora'}
+  ]},
+  {nome:'Miramar Shopping',key:'Miramar Shopping',pessoas:[
+    {nome:'Leticia Antunes da Silva',cargo:'Vendedora'},
+    {nome:'Mirella Macedo Di Renzo',cargo:'Vendedora'},
+    {nome:'Jessika Cristine Millan dos Santos',cargo:'Vendedora'},
+    {nome:'Aylla Barros dos Santos',cargo:'Auxiliar'}
+  ]},
+  {nome:'Azevedo Sodré',key:'Azevedo Sodré',pessoas:[
+    {nome:'Mariela Parente de Toledo Piza',cargo:'Vendedora'},
+    {nome:'Raisa Vigolo Chaves',cargo:'Vendedora'},
+    {nome:'Debora Cristina Olimpio de Oliveira',cargo:'Vendedora'}
+  ]},
+  {nome:'Litoral Plaza',key:'Litoral Plaza',pessoas:[
+    {nome:'Tainã Reis da Costa',cargo:'Vendedora'},
+    {nome:'Weslayne Karen Nunes',cargo:'Vendedora'},
+    {nome:'Dayana Silva de Aguiar',cargo:'Vendedora'},
+    {nome:'Ana Barbara Bispo de Souza',cargo:'Vendedora'}
+  ]},
+  {nome:'Bioritmo',key:'Bioritmo',pessoas:[
+    {nome:'Fernanda de Souza Rocha',cargo:'Vendedora'},
+    {nome:'Maria Eduarda Lisboa Silva',cargo:'Vendedora'}
+  ]}
+];
+const TURNOS=['entrada','saida_almoco','retorno_almoco','saida'];
+const TINFO={entrada:{l:'Entrada',b:'b-e'},saida_almoco:{l:'Saída Almoço',b:'b-a'},retorno_almoco:{l:'Retorno Almoço',b:'b-r'},saida:{l:'Saída',b:'b-s'}};
+const OCORR_INFO={folga:{l:'Folga',b:'b-folga',ec:'ec-folga'},atestado:{l:'Atestado',b:'b-atestado',ec:'ec-atestado'},'falta-j':{l:'Falta Just.',b:'b-falta-j',ec:'ec-falta-j'},'falta-i':{l:'Falta Injust.',b:'b-falta-i',ec:'ec-falta-i'},ferias:{l:'Férias',b:'b-ferias',ec:'ec-ferias'},licenca:{l:'Licença',b:'b-licenca',ec:'ec-licenca'},outro:{l:'Outro',b:'b-outro',ec:'ec-trab'}};
+
+// STATE
+let filtro='Todas',filtroBanco='Todas';
+let escalaMes=new Date().getMonth(),escalaAno=new Date().getFullYear();
+let bancoMes=new Date().getMonth(),bancoAno=new Date().getFullYear();
+let editCtx=null,celCtx=null,ocorrSel='normal';
+let abaAtiva='hoje';
+
+// UTILS
+function getHoje(){return new Date().toISOString().slice(0,10);}
+function getNow(){const d=new Date();return d.getHours().toString().padStart(2,'0')+':'+d.getMinutes().toString().padStart(2,'0');}
+function getDataFmt(){return new Date().toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'2-digit',year:'numeric'});}
+function getDiaSemana(data){return data?new Date(data+'T12:00').getDay():new Date().getDay();}
+function toMins(h){if(!h)return null;const[hh,mm]=h.split(':').map(Number);return hh*60+mm;}
+function minsToStr(m,comSinal){if(m===null||isNaN(m))return null;const neg=m<0;const abs=Math.abs(m);const s=(neg?'-':comSinal?'+':'')+Math.floor(abs/60)+'h'+(abs%60>0?(abs%60).toString().padStart(2,'0'):'');return s;}
+function diasNoMes(ano,mes){return new Date(ano,mes+1,0).getDate();}
+
+// STORAGE
+function loadPonto(key,data){try{const r=localStorage.getItem('ponto_'+key+'_'+(data||getHoje()));return r?JSON.parse(r):[];}catch(e){return[];}}
+function savePonto(key,arr,data){try{localStorage.setItem('ponto_'+key+'_'+(data||getHoje()),JSON.stringify(arr));}catch(e){}}
+function loadEscala(){try{return JSON.parse(localStorage.getItem('escala_live')||'{}');}catch(e){return{};}}
+function saveEscala(obj){localStorage.setItem('escala_live',JSON.stringify(obj));}
+function getEscalaDia(vend,data){const e=loadEscala();return e[vend+'|'+data]||'';}
+function setEscalaDia(vend,data,val){const e=loadEscala();if(val)e[vend+'|'+data]=val;else delete e[vend+'|'+data];saveEscala(e);}
+
+// FERIADOS
+function getFeriados(){try{return JSON.parse(localStorage.getItem('feriados_live')||'{}');}catch(e){return{};}}
+function isFeriado(data){return getFeriados()[data||getHoje()]||null;}
+function addFeriado(){
+  const d=document.getElementById('feriado-data').value;
+  const n=document.getElementById('feriado-nome').value.trim();
+  if(!d||!n){alert('Preencha data e nome.');return;}
+  const f=getFeriados();f[d]=n;localStorage.setItem('feriados_live',JSON.stringify(f));
+  renderFeriadoLista();render();
+}
+function delFeriado(d){const f=getFeriados();delete f[d];localStorage.setItem('feriados_live',JSON.stringify(f));renderFeriadoLista();render();}
+function renderFeriadoLista(){
+  const f=getFeriados();const keys=Object.keys(f).sort();
+  const el=document.getElementById('feriado-lista');
+  el.innerHTML=keys.length?keys.map(d=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #f5f5f5;font-size:12px"><span>${new Date(d+'T12:00').toLocaleDateString('pt-BR')} — ${f[d]}</span><button onclick="delFeriado('${d}')" style="background:none;border:none;color:#b83232;cursor:pointer">✕</button></div>`).join(''):'<div style="font-size:12px;color:#aaa;text-align:center;padding:10px">Nenhum feriado cadastrado</div>';
+}
+
+// TURNO
+function detectarTurno(horaEntrada,lojaKey,diaSemana,feriado){
+  const mins=toMins(horaEntrada);
+  if(lojaKey==='Bioritmo'){
+    if(diaSemana===6||feriado) return{entrada:'08:00',saida:'13:00',almoco:0,label:'Sáb/Feriado (8h–13h)',hPrevistas:5*60};
+    if(mins<10*60) return{entrada:'07:00',saida:'15:00',almoco:60,label:'Manhã (7h–15h)',hPrevistas:7*60};
+    return{entrada:'13:00',saida:'21:00',almoco:60,label:'Tarde (13h–21h)',hPrevistas:7*60};
+  }
+  if(lojaKey==='Azevedo Sodré'){
+    if(mins<9*60+30) return{entrada:'08:30',saida:'16:50',almoco:60,label:'Manhã (8h30–16h50)',hPrevistas:7*60+20};
+    if(mins<11*60+30) return{entrada:'10:30',saida:'18:50',almoco:60,label:'Intermediário (10h30–18h50)',hPrevistas:7*60+20};
+    return{entrada:'12:00',saida:'20:00',almoco:60,label:'Tarde (12h–20h)',hPrevistas:7*60+20};
+  }
+  if(diaSemana===0||feriado) return{entrada:'14:30',saida:'21:00',almoco:30,label:'Dom/Feriado (14h30–21h)',hPrevistas:6*60};
+  if(mins<11*60) return{entrada:'09:40',saida:'18:00',almoco:60,label:'Manhã (9h40–18h)',hPrevistas:7*60+20};
+  if(mins<13*60) return{entrada:'11:40',saida:'20:00',almoco:60,label:'Intermediário (11h40–20h)',hPrevistas:7*60+20};
+  return{entrada:'13:50',saida:'22:10',almoco:60,label:'Tarde (13h50–22h10)',hPrevistas:7*60+20};
+}
+
+function calcHoras(regs,lojaKey,data){
+  const ocorr=regs.find(r=>r.ocorrencia);
+  if(ocorr) return null;
+  const e=regs.find(r=>r.tipo==='entrada');
+  const s=regs.find(r=>r.tipo==='saida');
+  if(!e||!s) return null;
+  const dia=getDiaSemana(data);
+  const feriado=isFeriado(data);
+  const ti=detectarTurno(e.hora,lojaKey,dia,feriado);
+  const eR=toMins(e.hora),sR=toMins(s.hora);
+  const sA=toMins(regs.find(r=>r.tipo==='saida_almoco')?.hora);
+  const rA=toMins(regs.find(r=>r.tipo==='retorno_almoco')?.hora);
+  let trab=sR-eR;
+  if(sA&&rA) trab-=(rA-sA); else trab-=ti.almoco;
+  const prev=ti.hPrevistas;
+  const extra=trab-prev;
+  return{trabalhado:trab,trabalhadoStr:minsToStr(trab),previsto:prev,prevStr:minsToStr(prev),extra,extraStr:minsToStr(extra,true),turnoLabel:ti.label};
+}
+
+// BANCO DE HORAS MENSAL
+function calcBancoMes(vend,lojaKey,ano,mes){
+  const dias=diasNoMes(ano,mes);
+  let totalTrab=0,totalPrev=0,diasTrab=0,folgas=0,atestados=0,faltasJ=0,faltasI=0,ferias=0,licencas=0;
+  for(let d=1;d<=dias;d++){
+    const data=`${ano}-${String(mes+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const diaSem=getDiaSemana(data);
+    const escala=getEscalaDia(vend,data);
+    // Verifica se loja fecha neste dia
+    const fechaDom=(lojaKey==='Azevedo Sodré'||lojaKey==='Bioritmo')&&diaSem===0;
+    if(escala==='folga'){folgas++;continue;}
+    if(escala==='atestado'){atestados++;continue;}
+    if(escala==='falta-j'){faltasJ++;totalPrev+=7*60+20;continue;}
+    if(escala==='falta-i'){faltasI++;totalPrev+=7*60+20;continue;}
+    if(escala==='ferias'){ferias++;continue;}
+    if(escala==='licenca'){licencas++;continue;}
+    if(fechaDom) continue;
+    if(diaSem===0&&!escala) continue; // domingo sem escala = não conta
+    // Dia trabalhado
+    const regs=loadPonto(lojaKey,data).filter(r=>r.vend===vend);
+    const h=calcHoras(regs,lojaKey,data);
+    if(h){totalTrab+=h.trabalhado;totalPrev+=h.previsto;diasTrab++;}
+  }
+  const banco=totalTrab-totalPrev;
+  return{diasTrab,folgas,atestados,faltasJ,faltasI,ferias,licencas,totalTrab:minsToStr(totalTrab),totalPrev:minsToStr(totalPrev),banco,bancoStr:minsToStr(banco,true)};
+}
+
+// SENHA
+function verificaSenha(){
+  if(document.getElementById('senha-input').value===SENHA){
+    document.getElementById('senha-overlay').style.display='none';
+    render();renderEscala();renderBanco();
+  } else {
+    document.getElementById('senha-erro').style.display='block';
+    document.getElementById('senha-input').value='';
+  }
+}
+
+// MODAIS
+function openModal(id){document.getElementById(id).classList.add('open');}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+
+// EDIÇÃO
+let ocorrSel2='normal';
+function selOcorr(tipo){
+  ocorrSel2=tipo;
+  document.querySelectorAll('.ocorr-btn').forEach(b=>b.classList.remove('sel'));
+  document.getElementById('ocorr-'+tipo)?.classList.add('sel');
+  document.getElementById('horarios-section').style.display=tipo==='normal'?'block':'none';
+}
+
+function abrirEdicao(lojaKey,vend,dataEdit){
+  const data=dataEdit||getHoje();
+  const regs=loadPonto(lojaKey,data);
+  const pRegs=regs.filter(r=>r.vend===vend);
+  editCtx={lojaKey,vend,data};
+  document.getElementById('modal-titulo').textContent='✏️ '+vend.split(' ')[0];
+  document.getElementById('modal-sub').textContent=lojaKey;
+  document.getElementById('ed-data').value=data;
+  // Detectar ocorrência existente
+  const ocorr=pRegs.find(r=>r.ocorrencia);
+  selOcorr(ocorr?ocorr.ocorrencia:'normal');
+  TURNOS.forEach(t=>{
+    const r=pRegs.find(x=>x.tipo===t);
+    document.getElementById('ed-'+t).value=r?r.hora:'';
+  });
+  document.getElementById('ed-obs').value='';
+  openModal('modal-edit');
+}
+
+function salvarEdicao(){
+  const obs=document.getElementById('ed-obs').value.trim();
+  if(!obs){alert('Informe o motivo da alteração.');return;}
+  const data=document.getElementById('ed-data').value||getHoje();
+  const{lojaKey,vend}=editCtx;
+  let arr=loadPonto(lojaKey,data);
+  const outros=arr.filter(r=>r.vend!==vend);
+  const novos=[];
+  if(ocorrSel2!=='normal'){
+    novos.push({loja:lojaKey,vend,ocorrencia:ocorrSel2,data,editado:true,obs});
+  } else {
+    TURNOS.forEach(t=>{
+      const val=document.getElementById('ed-'+t).value;
+      if(val) novos.push({loja:lojaKey,vend,tipo:t,hora:val,data,editado:true,obs});
+    });
+  }
+  savePonto(lojaKey,[...outros,...novos],data);
+  const log=JSON.parse(localStorage.getItem('ponto_log_'+getHoje())||'[]');
+  log.push({hora:getNow(),vend,loja:lojaKey,ocorr:ocorrSel2,obs,data,ts:Date.now()});
+  localStorage.setItem('ponto_log_'+getHoje(),JSON.stringify(log));
+  closeModal('modal-edit');
+  render();
+}
+
+// ESCALA - CÉLULAS
+function abrirCel(vend,data,lojaKey){
+  const diaSem=getDiaSemana(data);
+  const fechaDom=(lojaKey==='Azevedo Sodré'||lojaKey==='Bioritmo')&&diaSem===0;
+  if(fechaDom) return;
+  celCtx={vend,data,lojaKey};
+  const atual=getEscalaDia(vend,data);
+  document.getElementById('cel-titulo').textContent=vend.split(' ')[0];
+  document.getElementById('cel-sub').textContent=new Date(data+'T12:00').toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long'});
+  document.querySelectorAll('.cel-opt').forEach(b=>b.classList.remove('sel'));
+  openModal('modal-cel');
+}
+function salvarCel(val){
+  if(!celCtx) return;
+  setEscalaDia(celCtx.vend,celCtx.data,val);
+  closeModal('modal-cel');
+  renderEscala();renderBanco();
+}
+
+// RENDER HOJE
+function render(){
+  document.getElementById('g-hora').textContent=getNow();
+  document.getElementById('g-data').textContent=getDataFmt();
+  const feriado=isFeriado();
+  const fb=document.getElementById('feriado-ativo-bar');
+  fb.innerHTML=feriado?`<div class="feriado-bar">🎉 <strong>Hoje é feriado:</strong> ${feriado} — horário especial ativo. <button style="margin-left:auto;background:none;border:none;color:#e65c00;cursor:pointer;font-size:11px" onclick="openModal('modal-feriado');renderFeriadoLista()">Editar</button></div>`:'';
+
+  const todos=[];
+  LOJAS_CFG.forEach(l=>{
+    const regs=loadPonto(l.key);
+    getPessoasAtivas(l.key).forEach(p=>{
+      const pRegs=regs.filter(r=>r.vend===p.nome);
+      todos.push({loja:l.nome,lojaKey:l.key,nome:p.nome,cargo:p.cargo,ativa:p.ativa,regs:pRegs});
+    });
+  });
+
+  const comReg=todos.filter(p=>p.regs.length>0).length;
+  const naLoja=todos.filter(p=>p.regs.find(r=>r.tipo==='entrada')&&!p.regs.find(r=>r.tipo==='saida')&&!p.regs.find(r=>r.ocorrencia)).length;
+  const emAlm=todos.filter(p=>p.regs.find(r=>r.tipo==='saida_almoco')&&!p.regs.find(r=>r.tipo==='retorno_almoco')).length;
+  const completos=todos.filter(p=>TURNOS.every(t=>p.regs.find(r=>r.tipo===t))).length;
+  const ocorrencias=todos.filter(p=>p.regs.find(r=>r.ocorrencia)).length;
+
+  document.getElementById('stats').innerHTML=`
+    <div class="stat"><div class="stat-val">${comReg}</div><div class="stat-lbl">Registraram</div></div>
+    <div class="stat"><div class="stat-val">${naLoja}</div><div class="stat-lbl">Na loja</div></div>
+    <div class="stat"><div class="stat-val">${emAlm}</div><div class="stat-lbl">Em almoço</div></div>
+    <div class="stat"><div class="stat-val">${completos}</div><div class="stat-lbl">Completos</div></div>
+    <div class="stat"><div class="stat-val">${ocorrencias}</div><div class="stat-lbl">Ocorrências</div></div>
+  `;
+
+  // Alertas
+  const alertas=[];
+  const agora=toMins(getNow());
+  todos.forEach(p=>{
+    if(p.regs.find(r=>r.ocorrencia)) return;
+    const feitos=p.regs.map(r=>r.tipo);
+    if(!feitos.includes('entrada')) return;
+    const e=p.regs.find(r=>r.tipo==='entrada');
+    const ti=detectarTurno(e.hora,p.lojaKey,new Date().getDay(),feriado);
+    const eAtras=toMins(e.hora)-toMins(ti.entrada);
+    if(eAtras>10) alertas.push({tipo:'warn',msg:`${p.nome.split(' ')[0]} (${p.lojaKey.split(' ')[0]}) — entrada ${e.hora}, previsto ${ti.entrada} (+${eAtras}min)`});
+    if(feitos.includes('saida_almoco')&&!feitos.includes('retorno_almoco')){
+      const sA=p.regs.find(r=>r.tipo==='saida_almoco');
+      const tAlm=agora-toMins(sA.hora);
+      if(tAlm>ti.almoco+10) alertas.push({tipo:'danger',msg:`🚨 ${p.nome.split(' ')[0]} (${p.lojaKey.split(' ')[0]}) — almoço há ${minsToStr(tAlm)}, previsto ${ti.almoco}min`});
+      else alertas.push({tipo:'warn',msg:`${p.nome.split(' ')[0]} (${p.lojaKey.split(' ')[0]}) — em almoço desde ${sA.hora}`});
+    }
+  });
+  const aEl=document.getElementById('alertas');
+  aEl.innerHTML=alertas.length?alertas.map(a=>`<div class="alerta-row ${a.tipo==='danger'?'al-danger':'al-warn'}">${a.msg}</div>`).join(''):'<div class="alerta-row al-ok">✅ Nenhum alerta no momento.</div>';
+
+  // Lojas
+  const lojasFilt=filtro==='Todas'?LOJAS_CFG:LOJAS_CFG.filter(l=>l.nome.includes(filtro)||l.key.includes(filtro));
+  document.getElementById('lojas-container').innerHTML=lojasFilt.map(loja=>{
+    const regs=loadPonto(loja.key);
+    const total=loja.pessoas.length;
+    const comR=loja.pessoas.filter(p=>regs.find(r=>r.vend===p.nome)).length;
+    const comp=loja.pessoas.filter(p=>TURNOS.every(t=>regs.find(r=>r.vend===p.nome&&r.tipo===t))).length;
+    const dot=comR===0?'dot-none':comp===total?'dot-ok':'dot-warn';
+    const rows=loja.pessoas.map(p=>{
+      const pRegs=regs.filter(r=>r.vend===p.nome);
+      const ocorr=pRegs.find(r=>r.ocorrencia);
+      let badgesHtml='';
+      if(ocorr){
+        const oi=OCORR_INFO[ocorr.ocorrencia]||{l:ocorr.ocorrencia,b:'b-outro'};
+        badgesHtml=`<span class="badge ${oi.b}">${oi.l}</span>`;
+      } else {
+        badgesHtml=TURNOS.map(t=>{
+          const r=pRegs.find(x=>x.tipo===t);
+          return r?`<span class="badge ${TINFO[t].b}">${TINFO[t].l} ${r.hora}${r.editado?'*':''}</span>`:`<span class="badge b-p">${TINFO[t].l}</span>`;
+        }).join('');
+        const h=calcHoras(pRegs,loja.key);
+        if(h){const cls=h.extra>0?'extra-pos':h.extra<0?'extra-neg':'';badgesHtml+=` <span class="${cls}">${h.extraStr}</span>`;}
+      }
+      const temEdit=pRegs.some(r=>r.editado);
+      return`<div class="vend-row">
+        <div><div class="vend-nome">${p.nome.split(' ').slice(0,2).join(' ')}${temEdit?' <span class="badge badge-edit">editado</span>':''}</div><div class="vend-cargo">${p.cargo}</div></div>
+        <div class="vend-badges">${badgesHtml}</div>
+        <button class="btn-edit" onclick="abrirEdicao('${loja.key}','${p.nome}')">✏️</button>
+      </div>`;
+    }).join('');
+    return`<div class="loja-sec"><div class="loja-hdr"><div><span class="dot ${dot}"></span><span class="loja-nome">${loja.nome}</span></div><div class="loja-resumo">${comR}/${total} · ${comp} completos</div></div>${rows}</div>`;
+  }).join('');
+}
+
+// RENDER ESCALA
+function renderEscala(){
+  const ano=escalaAno,mes=escalaMes;
+  document.getElementById('escala-mes-titulo').textContent=MESES[mes]+' '+ano;
+  const dias=diasNoMes(ano,mes);
+  const hoje=getHoje();
+  const feriados=getFeriados();
+  const cont=document.getElementById('escala-container');
+  cont.innerHTML=LOJAS_CFG.map(loja=>{
+    // Cabeçalho dias
+    let thDias='<th class="nome-col">Vendedora</th>';
+    for(let d=1;d<=dias;d++){
+      const data=`${ano}-${String(mes+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+      const diaSem=getDiaSemana(data);
+      const isFer=feriados[data];
+      thDias+=`<th style="${isFer?'background:#fff3e0;color:#e65c00':diaSem===0?'background:#fafafa;color:#ccc':''}">${DIAS_SEMANA[diaSem]}<br><strong>${d}</strong>${isFer?'<br><span style="font-size:8px">Fer</span>':''}</th>`;
+    }
+    const rows=loja.pessoas.map(p=>{
+      let tds=`<td class="nome-td">${p.nome.split(' ').slice(0,2).join(' ')}</td>`;
+      for(let d=1;d<=dias;d++){
+        const data=`${ano}-${String(mes+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+        const diaSem=getDiaSemana(data);
+        const fechaDom=(loja.key==='Azevedo Sodré'||loja.key==='Bioritmo')&&diaSem===0;
+        const isHoje=data===hoje;
+        const escala=getEscalaDia(p.nome,data);
+        const isFer=feriados[data];
+        let conteudo='';
+        if(escala&&OCORR_INFO[escala]) conteudo=`<span class="${OCORR_INFO[escala].ec}">${escala==='falta-j'?'FJ':escala==='falta-i'?'FI':escala==='atestado'?'AT':escala==='ferias'?'FÉR':escala==='licenca'?'LIC':escala==='folga'?'FL':''}</span>`;
+        else if(fechaDom) conteudo='<span style="color:#eee;font-size:10px">—</span>';
+        else if(isFer) conteudo='<span style="font-size:10px;color:#e65c00">🎉</span>';
+        else conteudo='<span class="ec-trab">—</span>';
+        const cursor=fechaDom?'cursor:default':'';
+        tds+=`<td style="${isHoje?'background:#fff9e0;':''}${cursor}" onclick="abrirCel('${p.nome}','${data}','${loja.key}')">${conteudo}</td>`;
+      }
+      return`<tr>${tds}</tr>`;
+    }).join('');
+    return`<div class="escala-loja-sec"><div class="escala-loja-hdr">${loja.nome}</div><div class="escala-table-wrap"><table class="escala-table"><thead><tr>${thDias}</tr></thead><tbody>${rows}</tbody></table></div></div>`;
+  }).join('');
+}
+
+function mudarMes(dir){escalaMes+=dir;if(escalaMes>11){escalaMes=0;escalaAno++;}if(escalaMes<0){escalaMes=11;escalaAno--;}renderEscala();}
+
+// RENDER BANCO
+function renderBanco(){
+  const ano=bancoAno,mes=bancoMes;
+  document.getElementById('banco-mes-titulo').textContent=MESES[mes]+' '+ano;
+  const lojasFilt=filtroBanco==='Todas'?LOJAS_CFG:LOJAS_CFG.filter(l=>l.nome.includes(filtroBanco)||l.key.includes(filtroBanco));
+  document.getElementById('banco-container').innerHTML=lojasFilt.map(loja=>{
+    const rows=loja.pessoas.map(p=>{
+      const b=calcBancoMes(p.nome,loja.key,ano,mes);
+      const cls=b.banco>0?'banco-pos':b.banco<0?'banco-neg':'banco-zero';
+      return`<tr>
+        <td>${p.nome.split(' ').slice(0,2).join(' ')}</td>
+        <td style="text-align:center">${p.cargo}</td>
+        <td style="text-align:center">${b.diasTrab}</td>
+        <td style="text-align:center">${b.folgas}</td>
+        <td style="text-align:center">${b.atestados}</td>
+        <td style="text-align:center">${b.faltasJ}</td>
+        <td style="text-align:center">${b.faltasI}</td>
+        <td style="text-align:center">${b.ferias}</td>
+        <td style="text-align:center">${b.totalTrab||'—'}</td>
+        <td style="text-align:center">${b.totalPrev||'—'}</td>
+        <td style="text-align:center" class="${cls}">${b.bancoStr||'—'}</td>
+      </tr>`;
+    }).join('');
+    return`<div class="loja-sec" style="margin-bottom:14px"><div class="loja-hdr"><span class="loja-nome">${loja.nome}</span></div>
+      <div style="overflow-x:auto"><table class="banco-table">
+        <thead><tr><th>Nome</th><th>Cargo</th><th>Dias Trab.</th><th>Folgas</th><th>Atestados</th><th>Falta J.</th><th>Falta I.</th><th>Férias</th><th>H. Trabalhadas</th><th>H. Previstas</th><th>Banco</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table></div></div>`;
+  }).join('');
+}
+
+function mudarMesBanco(dir){bancoMes+=dir;if(bancoMes>11){bancoMes=0;bancoAno++;}if(bancoMes<0){bancoMes=11;bancoAno--;}renderBanco();}
+function setFiltroBanco(f,btn){filtroBanco=f;document.querySelectorAll('#tabs-banco .tab').forEach(t=>t.classList.remove('active'));btn.classList.add('active');renderBanco();}
+
+// RENDER LOG
+function renderLog(){
+  const input=document.getElementById('log-data-input');
+  if(!input.value) input.value=getHoje();
+  const data=input.value;
+  const dateFmt=new Date(data+'T12:00').toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'2-digit',year:'numeric'});
+  const log=JSON.parse(localStorage.getItem('ponto_log_'+data)||'[]');
+  const el=document.getElementById('log-container');
+  const header=`<div style="font-size:11px;color:#aaa;margin-bottom:8px">${dateFmt}</div>`;
+  el.innerHTML=header+(log.length?log.slice().reverse().map(l=>`<div class="log-row"><span class="log-hora">${l.hora}</span><span><strong>${l.vend.split(' ')[0]}</strong> (${l.loja.split(' ')[0]})${l.ocorr&&l.ocorr!=='normal'?' — '+l.ocorr:''} — ${l.obs}${l.data&&l.data!==data?' <span style="font-size:10px;color:#aaa">(ref. '+new Date(l.data+'T12:00').toLocaleDateString('pt-BR')+')</span>':''}</span></div>`).join(''):'<div style="font-size:12px;color:#aaa;padding:16px 0">Nenhuma alteração registrada neste dia.</div>');
+}
+
+function logDiaAnterior(){
+  const input=document.getElementById('log-data-input');
+  const d=new Date((input.value||getHoje())+'T12:00');
+  d.setDate(d.getDate()-1);
+  input.value=d.toISOString().slice(0,10);
+  renderLog();
+}
+function logDiaSeguinte(){
+  const input=document.getElementById('log-data-input');
+  const d=new Date((input.value||getHoje())+'T12:00');
+  d.setDate(d.getDate()+1);
+  const hoje=getHoje();
+  if(d.toISOString().slice(0,10)>hoje) return;
+  input.value=d.toISOString().slice(0,10);
+  renderLog();
+}
+
+// NAV ABAS
+function setNavTab(aba,btn){
+  abaAtiva=aba;
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+  btn.classList.add('active');
+  ['hoje','escala','banco','log','equipe'].forEach(a=>document.getElementById('aba-'+a).style.display=a===aba?'block':'none');
+  if(aba==='escala') renderEscala();
+  if(aba==='banco') renderBanco();
+  if(aba==='log') renderLog();
+  if(aba==='equipe') renderEquipe();
+}
+
+function setFiltro(f,btn){filtro=f;document.querySelectorAll('#tabs .tab').forEach(t=>t.classList.remove('active'));btn.classList.add('active');render();}
+
+// EXPORTAR EXCEL DIA
+function exportarExcelDia(){
+  const wb=XLSX.utils.book_new();
+  LOJAS_CFG.forEach(loja=>{
+    const regs=loadPonto(loja.key);
+    const rows=[['Nome','Cargo','Tipo','Entrada','Saída Almoço','Retorno Almoço','Saída','H.Trabalhadas','H.Previstas','Extra/Falta','Turno','Editado','Obs']];
+    loja.pessoas.forEach(p=>{
+      const pRegs=regs.filter(r=>r.vend===p.nome);
+      const ocorr=pRegs.find(r=>r.ocorrencia);
+      if(ocorr){
+        rows.push([p.nome,p.cargo,OCORR_INFO[ocorr.ocorrencia]?.l||ocorr.ocorrencia,'—','—','—','—','—','—','—','—',ocorr.editado?'Sim':'Não',ocorr.obs||'']);
+      } else {
+        const e=pRegs.find(r=>r.tipo==='entrada');
+        const sa=pRegs.find(r=>r.tipo==='saida_almoco');
+        const ra=pRegs.find(r=>r.tipo==='retorno_almoco');
+        const s=pRegs.find(r=>r.tipo==='saida');
+        const h=calcHoras(pRegs,loja.key);
+        const ti=e?detectarTurno(e.hora,loja.key,new Date().getDay(),isFeriado()):null;
+        rows.push([p.nome,p.cargo,'Normal',e?e.hora:'—',sa?sa.hora:'—',ra?ra.hora:'—',s?s.hora:'—',h?h.trabalhadoStr:'—',h?h.prevStr:'—',h?h.extraStr:'—',ti?ti.label:'—',pRegs.some(r=>r.editado)?'Sim':'Não','']);
+      }
+    });
+    const ws=XLSX.utils.aoa_to_sheet(rows);
+    ws['!cols']=[{wch:26},{wch:14},{wch:14},{wch:10},{wch:14},{wch:16},{wch:10},{wch:14},{wch:12},{wch:12},{wch:22},{wch:10},{wch:30}];
+    XLSX.utils.book_append_sheet(wb,ws,loja.nome.substring(0,31));
+  });
+  const log=JSON.parse(localStorage.getItem('ponto_log_'+getHoje())||'[]');
+  if(log.length){
+    const lr=[['Hora','Vendedora','Loja','Ocorrência','Motivo']];
+    log.forEach(l=>lr.push([l.hora,l.vend,l.loja,l.ocorr||'—',l.obs]));
+    XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(lr),'Log');
+  }
+  XLSX.writeFile(wb,'Ponto_LIVE_'+getHoje()+'.xlsx');
+}
+
+// EXPORTAR EXCEL MÊS
+function exportarExcelMes(){
+  const wb=XLSX.utils.book_new();
+  const ano=escalaAno,mes=escalaMes;
+  LOJAS_CFG.forEach(loja=>{
+    const b=loja.pessoas.map(p=>{
+      const bk=calcBancoMes(p.nome,loja.key,ano,mes);
+      return[p.nome,p.cargo,bk.diasTrab,bk.folgas,bk.atestados,bk.faltasJ,bk.faltasI,bk.ferias,bk.licencas,bk.totalTrab||'—',bk.totalPrev||'—',bk.bancoStr||'—'];
+    });
+    const rows=[['Nome','Cargo','Dias Trab.','Folgas','Atestados','Falta Just.','Falta Injust.','Férias','Licença','H.Trabalhadas','H.Previstas','Banco de Horas'],...b];
+    const ws=XLSX.utils.aoa_to_sheet(rows);
+    ws['!cols']=[{wch:26},{wch:14},{wch:12},{wch:10},{wch:12},{wch:12},{wch:14},{wch:10},{wch:10},{wch:14},{wch:12},{wch:14}];
+    XLSX.utils.book_append_sheet(wb,ws,loja.nome.substring(0,31));
+  });
+  XLSX.writeFile(wb,'Banco_Horas_LIVE_'+MESES[mes]+'_'+ano+'.xlsx');
+}
+
+function exportarExcelBanco(){exportarExcelMes();}
+
+// CLOCK
+function updateClock(){document.getElementById('g-hora').textContent=getNow();document.getElementById('g-data').textContent=getDataFmt();}
+setInterval(updateClock,1000);
+setInterval(()=>{if(abaAtiva==='hoje')render();},30000);
+document.getElementById('senha-input').focus();
+
+
+
+// PONTO RETROATIVO 01-09 JUNHO 2026
+(function(){
+  if(!localStorage.getItem("ponto_Praiamar Shopping_2026-06-01")) localStorage.setItem("ponto_Praiamar Shopping_2026-06-01", "[{\"loja\": \"Praiamar Shopping\", \"vend\": \"Izabelle Cristhina Coelho Chaves\", \"tipo\": \"entrada\", \"hora\": \"09:40\", \"data\": \"2026-06-01\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Izabelle Cristhina Coelho Chaves\", \"tipo\": \"saida_almoco\", \"hora\": \"12:40\", \"data\": \"2026-06-01\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Izabelle Cristhina Coelho Chaves\", \"tipo\": \"retorno_almoco\", \"hora\": \"13:40\", \"data\": \"2026-06-01\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Izabelle Cristhina Coelho Chaves\", \"tipo\": \"saida\", \"hora\": \"18:00\", \"data\": \"2026-06-01\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Daniele Miguel Ferreira\", \"tipo\": \"entrada\", \"hora\": \"09:40\", \"data\": \"2026-06-01\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Daniele Miguel Ferreira\", \"tipo\": \"saida_almoco\", \"hora\": \"12:40\", \"data\": \"2026-06-01\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Daniele Miguel Ferreira\", \"tipo\": \"retorno_almoco\", \"hora\": \"13:40\", \"data\": \"2026-06-01\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Daniele Miguel Ferreira\", \"tipo\": \"saida\", \"hora\": \"18:00\", \"data\": \"2026-06-01\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Mariana Araujo de Oliveira\", \"tipo\": \"entrada\", \"hora\": \"11:40\", \"data\": \"2026-06-01\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno intermediario\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Mariana Araujo de Oliveira\", \"tipo\": \"saida_almoco\", \"hora\": \"14:40\", \"data\": \"2026-06-01\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Mariana Araujo de Oliveira\", \"tipo\": \"retorno_almoco\", \"hora\": \"15:40\", \"data\": \"2026-06-01\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Mariana Araujo de Oliveira\", \"tipo\": \"saida\", \"hora\": \"20:00\", \"data\": \"2026-06-01\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno intermediario\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Andr\u00e9 Luiz dos Anjos\", \"tipo\": \"entrada\", \"hora\": \"13:50\", \"data\": \"2026-06-01\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno tarde\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Andr\u00e9 Luiz dos Anjos\", \"tipo\": \"saida_almoco\", \"hora\": \"16:50\", \"data\": \"2026-06-01\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Andr\u00e9 Luiz dos Anjos\", \"tipo\": \"retorno_almoco\", \"hora\": \"17:50\", \"data\": \"2026-06-01\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Andr\u00e9 Luiz dos Anjos\", \"tipo\": \"saida\", \"hora\": \"22:10\", \"data\": \"2026-06-01\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno tarde\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Bianca Gomes Moreno\", \"tipo\": \"entrada\", \"hora\": \"13:50\", \"data\": \"2026-06-01\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno tarde\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Bianca Gomes Moreno\", \"tipo\": \"saida_almoco\", \"hora\": \"16:50\", \"data\": \"2026-06-01\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Bianca Gomes Moreno\", \"tipo\": \"retorno_almoco\", \"hora\": \"17:50\", \"data\": \"2026-06-01\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Bianca Gomes Moreno\", \"tipo\": \"saida\", \"hora\": \"22:10\", \"data\": \"2026-06-01\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno tarde\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Rafaela Carvalho Santos\", \"tipo\": \"entrada\", \"hora\": \"13:50\", \"data\": \"2026-06-01\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno tarde\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Rafaela Carvalho Santos\", \"tipo\": \"saida_almoco\", \"hora\": \"16:50\", \"data\": \"2026-06-01\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Rafaela Carvalho Santos\", \"tipo\": \"retorno_almoco\", \"hora\": \"17:50\", \"data\": \"2026-06-01\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Rafaela Carvalho Santos\", \"tipo\": \"saida\", \"hora\": \"22:10\", \"data\": \"2026-06-01\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno tarde\"}]");
+  if(!localStorage.getItem("ponto_Praiamar Shopping_2026-06-02")) localStorage.setItem("ponto_Praiamar Shopping_2026-06-02", "[{\"loja\": \"Praiamar Shopping\", \"vend\": \"Izabelle Cristhina Coelho Chaves\", \"tipo\": \"entrada\", \"hora\": \"09:40\", \"data\": \"2026-06-02\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Izabelle Cristhina Coelho Chaves\", \"tipo\": \"saida_almoco\", \"hora\": \"12:40\", \"data\": \"2026-06-02\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Izabelle Cristhina Coelho Chaves\", \"tipo\": \"retorno_almoco\", \"hora\": \"13:40\", \"data\": \"2026-06-02\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Izabelle Cristhina Coelho Chaves\", \"tipo\": \"saida\", \"hora\": \"18:00\", \"data\": \"2026-06-02\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Daniele Miguel Ferreira\", \"tipo\": \"entrada\", \"hora\": \"09:40\", \"data\": \"2026-06-02\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Daniele Miguel Ferreira\", \"tipo\": \"saida_almoco\", \"hora\": \"12:40\", \"data\": \"2026-06-02\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Daniele Miguel Ferreira\", \"tipo\": \"retorno_almoco\", \"hora\": \"13:40\", \"data\": \"2026-06-02\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Daniele Miguel Ferreira\", \"tipo\": \"saida\", \"hora\": \"18:00\", \"data\": \"2026-06-02\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Mariana Araujo de Oliveira\", \"tipo\": \"entrada\", \"hora\": \"11:40\", \"data\": \"2026-06-02\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno intermediario\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Mariana Araujo de Oliveira\", \"tipo\": \"saida_almoco\", \"hora\": \"14:40\", \"data\": \"2026-06-02\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Mariana Araujo de Oliveira\", \"tipo\": \"retorno_almoco\", \"hora\": \"15:40\", \"data\": \"2026-06-02\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Mariana Araujo de Oliveira\", \"tipo\": \"saida\", \"hora\": \"20:00\", \"data\": \"2026-06-02\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno intermediario\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Andr\u00e9 Luiz dos Anjos\", \"tipo\": \"entrada\", \"hora\": \"13:50\", \"data\": \"2026-06-02\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno tarde\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Andr\u00e9 Luiz dos Anjos\", \"tipo\": \"saida_almoco\", \"hora\": \"16:50\", \"data\": \"2026-06-02\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Andr\u00e9 Luiz dos Anjos\", \"tipo\": \"retorno_almoco\", \"hora\": \"17:50\", \"data\": \"2026-06-02\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Andr\u00e9 Luiz dos Anjos\", \"tipo\": \"saida\", \"hora\": \"22:10\", \"data\": \"2026-06-02\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno tarde\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Bianca Gomes Moreno\", \"tipo\": \"entrada\", \"hora\": \"13:50\", \"data\": \"2026-06-02\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno tarde\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Bianca Gomes Moreno\", \"tipo\": \"saida_almoco\", \"hora\": \"16:50\", \"data\": \"2026-06-02\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Bianca Gomes Moreno\", \"tipo\": \"retorno_almoco\", \"hora\": \"17:50\", \"data\": \"2026-06-02\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Bianca Gomes Moreno\", \"tipo\": \"saida\", \"hora\": \"22:10\", \"data\": \"2026-06-02\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno tarde\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Rafaela Carvalho Santos\", \"tipo\": \"entrada\", \"hora\": \"13:50\", \"data\": \"2026-06-02\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno tarde\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Rafaela Carvalho Santos\", \"tipo\": \"saida_almoco\", \"hora\": \"16:50\", \"data\": \"2026-06-02\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Rafaela Carvalho Santos\", \"tipo\": \"retorno_almoco\", \"hora\": \"17:50\", \"data\": \"2026-06-02\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Rafaela Carvalho Santos\", \"tipo\": \"saida\", \"hora\": \"22:10\", \"data\": \"2026-06-02\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno tarde\"}]");
+  if(!localStorage.getItem("ponto_Praiamar Shopping_2026-06-03")) localStorage.setItem("ponto_Praiamar Shopping_2026-06-03", "[{\"loja\": \"Praiamar Shopping\", \"vend\": \"Izabelle Cristhina Coelho Chaves\", \"tipo\": \"entrada\", \"hora\": \"09:40\", \"data\": \"2026-06-03\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Izabelle Cristhina Coelho Chaves\", \"tipo\": \"saida_almoco\", \"hora\": \"12:40\", \"data\": \"2026-06-03\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Izabelle Cristhina Coelho Chaves\", \"tipo\": \"retorno_almoco\", \"hora\": \"13:40\", \"data\": \"2026-06-03\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Izabelle Cristhina Coelho Chaves\", \"tipo\": \"saida\", \"hora\": \"18:00\", \"data\": \"2026-06-03\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Daniele Miguel Ferreira\", \"tipo\": \"entrada\", \"hora\": \"09:40\", \"data\": \"2026-06-03\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Daniele Miguel Ferreira\", \"tipo\": \"saida_almoco\", \"hora\": \"12:40\", \"data\": \"2026-06-03\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Daniele Miguel Ferreira\", \"tipo\": \"retorno_almoco\", \"hora\": \"13:40\", \"data\": \"2026-06-03\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Daniele Miguel Ferreira\", \"tipo\": \"saida\", \"hora\": \"18:00\", \"data\": \"2026-06-03\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Mariana Araujo de Oliveira\", \"tipo\": \"entrada\", \"hora\": \"11:40\", \"data\": \"2026-06-03\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno intermediario\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Mariana Araujo de Oliveira\", \"tipo\": \"saida_almoco\", \"hora\": \"14:40\", \"data\": \"2026-06-03\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Mariana Araujo de Oliveira\", \"tipo\": \"retorno_almoco\", \"hora\": \"15:40\", \"data\": \"2026-06-03\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Mariana Araujo de Oliveira\", \"tipo\": \"saida\", \"hora\": \"20:00\", \"data\": \"2026-06-03\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno intermediario\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Bianca Gomes Moreno\", \"tipo\": \"entrada\", \"hora\": \"13:50\", \"data\": \"2026-06-03\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno tarde\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Bianca Gomes Moreno\", \"tipo\": \"saida_almoco\", \"hora\": \"16:50\", \"data\": \"2026-06-03\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Bianca Gomes Moreno\", \"tipo\": \"retorno_almoco\", \"hora\": \"17:50\", \"data\": \"2026-06-03\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Bianca Gomes Moreno\", \"tipo\": \"saida\", \"hora\": \"22:10\", \"data\": \"2026-06-03\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno tarde\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Rafaela Carvalho Santos\", \"tipo\": \"entrada\", \"hora\": \"13:50\", \"data\": \"2026-06-03\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno tarde\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Rafaela Carvalho Santos\", \"tipo\": \"saida_almoco\", \"hora\": \"16:50\", \"data\": \"2026-06-03\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Rafaela Carvalho Santos\", \"tipo\": \"retorno_almoco\", \"hora\": \"17:50\", \"data\": \"2026-06-03\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Rafaela Carvalho Santos\", \"tipo\": \"saida\", \"hora\": \"22:10\", \"data\": \"2026-06-03\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno tarde\"}]");
+  if(!localStorage.getItem("ponto_Praiamar Shopping_2026-06-04")) localStorage.setItem("ponto_Praiamar Shopping_2026-06-04", "[{\"loja\": \"Praiamar Shopping\", \"vend\": \"Izabelle Cristhina Coelho Chaves\", \"tipo\": \"entrada\", \"hora\": \"09:40\", \"data\": \"2026-06-04\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Izabelle Cristhina Coelho Chaves\", \"tipo\": \"saida_almoco\", \"hora\": \"12:40\", \"data\": \"2026-06-04\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Izabelle Cristhina Coelho Chaves\", \"tipo\": \"retorno_almoco\", \"hora\": \"13:40\", \"data\": \"2026-06-04\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Izabelle Cristhina Coelho Chaves\", \"tipo\": \"saida\", \"hora\": \"18:00\", \"data\": \"2026-06-04\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Daniele Miguel Ferreira\", \"tipo\": \"entrada\", \"hora\": \"09:40\", \"data\": \"2026-06-04\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Daniele Miguel Ferreira\", \"tipo\": \"saida_almoco\", \"hora\": \"12:40\", \"data\": \"2026-06-04\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Daniele Miguel Ferreira\", \"tipo\": \"retorno_almoco\", \"hora\": \"13:40\", \"data\": \"2026-06-04\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Daniele Miguel Ferreira\", \"tipo\": \"saida\", \"hora\": \"18:00\", \"data\": \"2026-06-04\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Mariana Araujo de Oliveira\", \"tipo\": \"entrada\", \"hora\": \"11:40\", \"data\": \"2026-06-04\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno intermediario\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Mariana Araujo de Oliveira\", \"tipo\": \"saida_almoco\", \"hora\": \"14:40\", \"data\": \"2026-06-04\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Mariana Araujo de Oliveira\", \"tipo\": \"retorno_almoco\", \"hora\": \"15:40\", \"data\": \"2026-06-04\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Mariana Araujo de Oliveira\", \"tipo\": \"saida\", \"hora\": \"20:00\", \"data\": \"2026-06-04\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno intermediario\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Andr\u00e9 Luiz dos Anjos\", \"tipo\": \"entrada\", \"hora\": \"13:50\", \"data\": \"2026-06-04\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno tarde\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Andr\u00e9 Luiz dos Anjos\", \"tipo\": \"saida_almoco\", \"hora\": \"16:50\", \"data\": \"2026-06-04\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Andr\u00e9 Luiz dos Anjos\", \"tipo\": \"retorno_almoco\", \"hora\": \"17:50\", \"data\": \"2026-06-04\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Andr\u00e9 Luiz dos Anjos\", \"tipo\": \"saida\", \"hora\": \"22:10\", \"data\": \"2026-06-04\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno tarde\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Bianca Gomes Moreno\", \"tipo\": \"entrada\", \"hora\": \"13:50\", \"data\": \"2026-06-04\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno tarde\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Bianca Gomes Moreno\", \"tipo\": \"saida_almoco\", \"hora\": \"16:50\", \"data\": \"2026-06-04\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Bianca Gomes Moreno\", \"tipo\": \"retorno_almoco\", \"hora\": \"17:50\", \"data\": \"2026-06-04\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Bianca Gomes Moreno\", \"tipo\": \"saida\", \"hora\": \"22:10\", \"data\": \"2026-06-04\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno tarde\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Rafaela Carvalho Santos\", \"tipo\": \"entrada\", \"hora\": \"13:50\", \"data\": \"2026-06-04\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno tarde\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Rafaela Carvalho Santos\", \"tipo\": \"saida_almoco\", \"hora\": \"16:50\", \"data\": \"2026-06-04\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Rafaela Carvalho Santos\", \"tipo\": \"retorno_almoco\", \"hora\": \"17:50\", \"data\": \"2026-06-04\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Rafaela Carvalho Santos\", \"tipo\": \"saida\", \"hora\": \"22:10\", \"data\": \"2026-06-04\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno tarde\"}]");
+  if(!localStorage.getItem("ponto_Praiamar Shopping_2026-06-05")) localStorage.setItem("ponto_Praiamar Shopping_2026-06-05", "[{\"loja\": \"Praiamar Shopping\", \"vend\": \"Izabelle Cristhina Coelho Chaves\", \"tipo\": \"entrada\", \"hora\": \"09:40\", \"data\": \"2026-06-05\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Izabelle Cristhina Coelho Chaves\", \"tipo\": \"saida_almoco\", \"hora\": \"12:40\", \"data\": \"2026-06-05\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Izabelle Cristhina Coelho Chaves\", \"tipo\": \"retorno_almoco\", \"hora\": \"13:40\", \"data\": \"2026-06-05\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Izabelle Cristhina Coelho Chaves\", \"tipo\": \"saida\", \"hora\": \"18:00\", \"data\": \"2026-06-05\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Daniele Miguel Ferreira\", \"tipo\": \"entrada\", \"hora\": \"09:40\", \"data\": \"2026-06-05\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Daniele Miguel Ferreira\", \"tipo\": \"saida_almoco\", \"hora\": \"12:40\", \"data\": \"2026-06-05\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Daniele Miguel Ferreira\", \"tipo\": \"retorno_almoco\", \"hora\": \"13:40\", \"data\": \"2026-06-05\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Daniele Miguel Ferreira\", \"tipo\": \"saida\", \"hora\": \"18:00\", \"data\": \"2026-06-05\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Mariana Araujo de Oliveira\", \"tipo\": \"entrada\", \"hora\": \"11:40\", \"data\": \"2026-06-05\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno intermediario\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Mariana Araujo de Oliveira\", \"tipo\": \"saida_almoco\", \"hora\": \"14:40\", \"data\": \"2026-06-05\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Mariana Araujo de Oliveira\", \"tipo\": \"retorno_almoco\", \"hora\": \"15:40\", \"data\": \"2026-06-05\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Mariana Araujo de Oliveira\", \"tipo\": \"saida\", \"hora\": \"20:00\", \"data\": \"2026-06-05\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno intermediario\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Andr\u00e9 Luiz dos Anjos\", \"tipo\": \"entrada\", \"hora\": \"13:50\", \"data\": \"2026-06-05\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno tarde\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Andr\u00e9 Luiz dos Anjos\", \"tipo\": \"saida_almoco\", \"hora\": \"16:50\", \"data\": \"2026-06-05\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Andr\u00e9 Luiz dos Anjos\", \"tipo\": \"retorno_almoco\", \"hora\": \"17:50\", \"data\": \"2026-06-05\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Andr\u00e9 Luiz dos Anjos\", \"tipo\": \"saida\", \"hora\": \"22:10\", \"data\": \"2026-06-05\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno tarde\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Bianca Gomes Moreno\", \"tipo\": \"entrada\", \"hora\": \"13:50\", \"data\": \"2026-06-05\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno tarde\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Bianca Gomes Moreno\", \"tipo\": \"saida_almoco\", \"hora\": \"16:50\", \"data\": \"2026-06-05\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Bianca Gomes Moreno\", \"tipo\": \"retorno_almoco\", \"hora\": \"17:50\", \"data\": \"2026-06-05\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Bianca Gomes Moreno\", \"tipo\": \"saida\", \"hora\": \"22:10\", \"data\": \"2026-06-05\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno tarde\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Rafaela Carvalho Santos\", \"tipo\": \"entrada\", \"hora\": \"13:50\", \"data\": \"2026-06-05\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno tarde\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Rafaela Carvalho Santos\", \"tipo\": \"saida_almoco\", \"hora\": \"16:50\", \"data\": \"2026-06-05\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Rafaela Carvalho Santos\", \"tipo\": \"retorno_almoco\", \"hora\": \"17:50\", \"data\": \"2026-06-05\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Rafaela Carvalho Santos\", \"tipo\": \"saida\", \"hora\": \"22:10\", \"data\": \"2026-06-05\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno tarde\"}]");
+  if(!localStorage.getItem("ponto_Praiamar Shopping_2026-06-06")) localStorage.setItem("ponto_Praiamar Shopping_2026-06-06", "[{\"loja\": \"Praiamar Shopping\", \"vend\": \"Izabelle Cristhina Coelho Chaves\", \"tipo\": \"entrada\", \"hora\": \"09:40\", \"data\": \"2026-06-06\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Izabelle Cristhina Coelho Chaves\", \"tipo\": \"saida_almoco\", \"hora\": \"12:40\", \"data\": \"2026-06-06\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Izabelle Cristhina Coelho Chaves\", \"tipo\": \"retorno_almoco\", \"hora\": \"13:40\", \"data\": \"2026-06-06\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Izabelle Cristhina Coelho Chaves\", \"tipo\": \"saida\", \"hora\": \"18:00\", \"data\": \"2026-06-06\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Daniele Miguel Ferreira\", \"tipo\": \"entrada\", \"hora\": \"09:40\", \"data\": \"2026-06-06\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Daniele Miguel Ferreira\", \"tipo\": \"saida_almoco\", \"hora\": \"12:40\", \"data\": \"2026-06-06\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Daniele Miguel Ferreira\", \"tipo\": \"retorno_almoco\", \"hora\": \"13:40\", \"data\": \"2026-06-06\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Daniele Miguel Ferreira\", \"tipo\": \"saida\", \"hora\": \"18:00\", \"data\": \"2026-06-06\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Mariana Araujo de Oliveira\", \"tipo\": \"entrada\", \"hora\": \"11:40\", \"data\": \"2026-06-06\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno intermediario\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Mariana Araujo de Oliveira\", \"tipo\": \"saida_almoco\", \"hora\": \"14:40\", \"data\": \"2026-06-06\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Mariana Araujo de Oliveira\", \"tipo\": \"retorno_almoco\", \"hora\": \"15:40\", \"data\": \"2026-06-06\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Mariana Araujo de Oliveira\", \"tipo\": \"saida\", \"hora\": \"20:00\", \"data\": \"2026-06-06\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno intermediario\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Andr\u00e9 Luiz dos Anjos\", \"tipo\": \"entrada\", \"hora\": \"13:50\", \"data\": \"2026-06-06\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno tarde\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Andr\u00e9 Luiz dos Anjos\", \"tipo\": \"saida_almoco\", \"hora\": \"16:50\", \"data\": \"2026-06-06\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Andr\u00e9 Luiz dos Anjos\", \"tipo\": \"retorno_almoco\", \"hora\": \"17:50\", \"data\": \"2026-06-06\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Andr\u00e9 Luiz dos Anjos\", \"tipo\": \"saida\", \"hora\": \"22:10\", \"data\": \"2026-06-06\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno tarde\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Bianca Gomes Moreno\", \"tipo\": \"entrada\", \"hora\": \"13:50\", \"data\": \"2026-06-06\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno tarde\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Bianca Gomes Moreno\", \"tipo\": \"saida_almoco\", \"hora\": \"16:50\", \"data\": \"2026-06-06\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Bianca Gomes Moreno\", \"tipo\": \"retorno_almoco\", \"hora\": \"17:50\", \"data\": \"2026-06-06\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Bianca Gomes Moreno\", \"tipo\": \"saida\", \"hora\": \"22:10\", \"data\": \"2026-06-06\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno tarde\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Rafaela Carvalho Santos\", \"tipo\": \"entrada\", \"hora\": \"13:50\", \"data\": \"2026-06-06\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno tarde\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Rafaela Carvalho Santos\", \"tipo\": \"saida_almoco\", \"hora\": \"16:50\", \"data\": \"2026-06-06\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Rafaela Carvalho Santos\", \"tipo\": \"retorno_almoco\", \"hora\": \"17:50\", \"data\": \"2026-06-06\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Rafaela Carvalho Santos\", \"tipo\": \"saida\", \"hora\": \"22:10\", \"data\": \"2026-06-06\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno tarde\"}]");
+  if(!localStorage.getItem("ponto_Praiamar Shopping_2026-06-07")) localStorage.setItem("ponto_Praiamar Shopping_2026-06-07", "[{\"loja\": \"Praiamar Shopping\", \"vend\": \"Izabelle Cristhina Coelho Chaves\", \"tipo\": \"entrada\", \"hora\": \"09:40\", \"data\": \"2026-06-07\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Izabelle Cristhina Coelho Chaves\", \"tipo\": \"saida_almoco\", \"hora\": \"12:40\", \"data\": \"2026-06-07\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Izabelle Cristhina Coelho Chaves\", \"tipo\": \"retorno_almoco\", \"hora\": \"13:40\", \"data\": \"2026-06-07\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Izabelle Cristhina Coelho Chaves\", \"tipo\": \"saida\", \"hora\": \"18:00\", \"data\": \"2026-06-07\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Daniele Miguel Ferreira\", \"tipo\": \"entrada\", \"hora\": \"09:40\", \"data\": \"2026-06-07\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Daniele Miguel Ferreira\", \"tipo\": \"saida_almoco\", \"hora\": \"12:40\", \"data\": \"2026-06-07\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Daniele Miguel Ferreira\", \"tipo\": \"retorno_almoco\", \"hora\": \"13:40\", \"data\": \"2026-06-07\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Daniele Miguel Ferreira\", \"tipo\": \"saida\", \"hora\": \"18:00\", \"data\": \"2026-06-07\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Mariana Araujo de Oliveira\", \"tipo\": \"entrada\", \"hora\": \"11:40\", \"data\": \"2026-06-07\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno intermediario\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Mariana Araujo de Oliveira\", \"tipo\": \"saida_almoco\", \"hora\": \"14:40\", \"data\": \"2026-06-07\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Mariana Araujo de Oliveira\", \"tipo\": \"retorno_almoco\", \"hora\": \"15:40\", \"data\": \"2026-06-07\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Mariana Araujo de Oliveira\", \"tipo\": \"saida\", \"hora\": \"20:00\", \"data\": \"2026-06-07\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno intermediario\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Bianca Gomes Moreno\", \"tipo\": \"entrada\", \"hora\": \"13:50\", \"data\": \"2026-06-07\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno tarde\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Bianca Gomes Moreno\", \"tipo\": \"saida_almoco\", \"hora\": \"16:50\", \"data\": \"2026-06-07\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Bianca Gomes Moreno\", \"tipo\": \"retorno_almoco\", \"hora\": \"17:50\", \"data\": \"2026-06-07\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Bianca Gomes Moreno\", \"tipo\": \"saida\", \"hora\": \"22:10\", \"data\": \"2026-06-07\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno tarde\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Rafaela Carvalho Santos\", \"tipo\": \"entrada\", \"hora\": \"13:50\", \"data\": \"2026-06-07\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno tarde\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Rafaela Carvalho Santos\", \"tipo\": \"saida_almoco\", \"hora\": \"16:50\", \"data\": \"2026-06-07\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Rafaela Carvalho Santos\", \"tipo\": \"retorno_almoco\", \"hora\": \"17:50\", \"data\": \"2026-06-07\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Rafaela Carvalho Santos\", \"tipo\": \"saida\", \"hora\": \"22:10\", \"data\": \"2026-06-07\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno tarde\"}]");
+  if(!localStorage.getItem("ponto_Praiamar Shopping_2026-06-08")) localStorage.setItem("ponto_Praiamar Shopping_2026-06-08", "[{\"loja\": \"Praiamar Shopping\", \"vend\": \"Izabelle Cristhina Coelho Chaves\", \"tipo\": \"entrada\", \"hora\": \"09:40\", \"data\": \"2026-06-08\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Izabelle Cristhina Coelho Chaves\", \"tipo\": \"saida_almoco\", \"hora\": \"12:40\", \"data\": \"2026-06-08\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Izabelle Cristhina Coelho Chaves\", \"tipo\": \"retorno_almoco\", \"hora\": \"13:40\", \"data\": \"2026-06-08\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Izabelle Cristhina Coelho Chaves\", \"tipo\": \"saida\", \"hora\": \"18:00\", \"data\": \"2026-06-08\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Daniele Miguel Ferreira\", \"tipo\": \"entrada\", \"hora\": \"09:40\", \"data\": \"2026-06-08\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Daniele Miguel Ferreira\", \"tipo\": \"saida_almoco\", \"hora\": \"12:40\", \"data\": \"2026-06-08\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Daniele Miguel Ferreira\", \"tipo\": \"retorno_almoco\", \"hora\": \"13:40\", \"data\": \"2026-06-08\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Daniele Miguel Ferreira\", \"tipo\": \"saida\", \"hora\": \"18:00\", \"data\": \"2026-06-08\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Mariana Araujo de Oliveira\", \"tipo\": \"entrada\", \"hora\": \"11:40\", \"data\": \"2026-06-08\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno intermediario\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Mariana Araujo de Oliveira\", \"tipo\": \"saida_almoco\", \"hora\": \"14:40\", \"data\": \"2026-06-08\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Mariana Araujo de Oliveira\", \"tipo\": \"retorno_almoco\", \"hora\": \"15:40\", \"data\": \"2026-06-08\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Mariana Araujo de Oliveira\", \"tipo\": \"saida\", \"hora\": \"20:00\", \"data\": \"2026-06-08\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno intermediario\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Andr\u00e9 Luiz dos Anjos\", \"tipo\": \"entrada\", \"hora\": \"13:50\", \"data\": \"2026-06-08\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno tarde\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Andr\u00e9 Luiz dos Anjos\", \"tipo\": \"saida_almoco\", \"hora\": \"16:50\", \"data\": \"2026-06-08\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Andr\u00e9 Luiz dos Anjos\", \"tipo\": \"retorno_almoco\", \"hora\": \"17:50\", \"data\": \"2026-06-08\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Andr\u00e9 Luiz dos Anjos\", \"tipo\": \"saida\", \"hora\": \"22:10\", \"data\": \"2026-06-08\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno tarde\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Bianca Gomes Moreno\", \"tipo\": \"entrada\", \"hora\": \"13:50\", \"data\": \"2026-06-08\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno tarde\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Bianca Gomes Moreno\", \"tipo\": \"saida_almoco\", \"hora\": \"16:50\", \"data\": \"2026-06-08\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Bianca Gomes Moreno\", \"tipo\": \"retorno_almoco\", \"hora\": \"17:50\", \"data\": \"2026-06-08\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Bianca Gomes Moreno\", \"tipo\": \"saida\", \"hora\": \"22:10\", \"data\": \"2026-06-08\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno tarde\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Rafaela Carvalho Santos\", \"tipo\": \"entrada\", \"hora\": \"13:50\", \"data\": \"2026-06-08\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno tarde\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Rafaela Carvalho Santos\", \"tipo\": \"saida_almoco\", \"hora\": \"16:50\", \"data\": \"2026-06-08\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Rafaela Carvalho Santos\", \"tipo\": \"retorno_almoco\", \"hora\": \"17:50\", \"data\": \"2026-06-08\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Rafaela Carvalho Santos\", \"tipo\": \"saida\", \"hora\": \"22:10\", \"data\": \"2026-06-08\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno tarde\"}]");
+  if(!localStorage.getItem("ponto_Praiamar Shopping_2026-06-09")) localStorage.setItem("ponto_Praiamar Shopping_2026-06-09", "[{\"loja\": \"Praiamar Shopping\", \"vend\": \"Izabelle Cristhina Coelho Chaves\", \"tipo\": \"entrada\", \"hora\": \"09:40\", \"data\": \"2026-06-09\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Izabelle Cristhina Coelho Chaves\", \"tipo\": \"saida_almoco\", \"hora\": \"12:40\", \"data\": \"2026-06-09\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Izabelle Cristhina Coelho Chaves\", \"tipo\": \"retorno_almoco\", \"hora\": \"13:40\", \"data\": \"2026-06-09\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Izabelle Cristhina Coelho Chaves\", \"tipo\": \"saida\", \"hora\": \"18:00\", \"data\": \"2026-06-09\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Daniele Miguel Ferreira\", \"tipo\": \"entrada\", \"hora\": \"09:40\", \"data\": \"2026-06-09\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Daniele Miguel Ferreira\", \"tipo\": \"saida_almoco\", \"hora\": \"12:40\", \"data\": \"2026-06-09\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Daniele Miguel Ferreira\", \"tipo\": \"retorno_almoco\", \"hora\": \"13:40\", \"data\": \"2026-06-09\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Daniele Miguel Ferreira\", \"tipo\": \"saida\", \"hora\": \"18:00\", \"data\": \"2026-06-09\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Mariana Araujo de Oliveira\", \"tipo\": \"entrada\", \"hora\": \"11:40\", \"data\": \"2026-06-09\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno intermediario\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Mariana Araujo de Oliveira\", \"tipo\": \"saida_almoco\", \"hora\": \"14:40\", \"data\": \"2026-06-09\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Mariana Araujo de Oliveira\", \"tipo\": \"retorno_almoco\", \"hora\": \"15:40\", \"data\": \"2026-06-09\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Mariana Araujo de Oliveira\", \"tipo\": \"saida\", \"hora\": \"20:00\", \"data\": \"2026-06-09\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno intermediario\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Andr\u00e9 Luiz dos Anjos\", \"tipo\": \"entrada\", \"hora\": \"13:50\", \"data\": \"2026-06-09\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno tarde\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Andr\u00e9 Luiz dos Anjos\", \"tipo\": \"saida_almoco\", \"hora\": \"16:50\", \"data\": \"2026-06-09\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Andr\u00e9 Luiz dos Anjos\", \"tipo\": \"retorno_almoco\", \"hora\": \"17:50\", \"data\": \"2026-06-09\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Andr\u00e9 Luiz dos Anjos\", \"tipo\": \"saida\", \"hora\": \"22:10\", \"data\": \"2026-06-09\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno tarde\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Bianca Gomes Moreno\", \"tipo\": \"entrada\", \"hora\": \"13:50\", \"data\": \"2026-06-09\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno tarde\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Bianca Gomes Moreno\", \"tipo\": \"saida_almoco\", \"hora\": \"16:50\", \"data\": \"2026-06-09\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Bianca Gomes Moreno\", \"tipo\": \"retorno_almoco\", \"hora\": \"17:50\", \"data\": \"2026-06-09\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Bianca Gomes Moreno\", \"tipo\": \"saida\", \"hora\": \"22:10\", \"data\": \"2026-06-09\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno tarde\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Rafaela Carvalho Santos\", \"tipo\": \"entrada\", \"hora\": \"13:50\", \"data\": \"2026-06-09\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno tarde\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Rafaela Carvalho Santos\", \"tipo\": \"saida_almoco\", \"hora\": \"16:50\", \"data\": \"2026-06-09\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Rafaela Carvalho Santos\", \"tipo\": \"retorno_almoco\", \"hora\": \"17:50\", \"data\": \"2026-06-09\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Praiamar Shopping\", \"vend\": \"Rafaela Carvalho Santos\", \"tipo\": \"saida\", \"hora\": \"22:10\", \"data\": \"2026-06-09\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno tarde\"}]");
+  if(!localStorage.getItem("ponto_Miramar Shopping_2026-06-01")) localStorage.setItem("ponto_Miramar Shopping_2026-06-01", "[{\"loja\": \"Miramar Shopping\", \"vend\": \"Mirella Macedo Di Renzo\", \"tipo\": \"entrada\", \"hora\": \"09:40\", \"data\": \"2026-06-01\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}, {\"loja\": \"Miramar Shopping\", \"vend\": \"Mirella Macedo Di Renzo\", \"tipo\": \"saida_almoco\", \"hora\": \"12:40\", \"data\": \"2026-06-01\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Miramar Shopping\", \"vend\": \"Mirella Macedo Di Renzo\", \"tipo\": \"retorno_almoco\", \"hora\": \"13:40\", \"data\": \"2026-06-01\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Miramar Shopping\", \"vend\": \"Mirella Macedo Di Renzo\", \"tipo\": \"saida\", \"hora\": \"18:00\", \"data\": \"2026-06-01\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}, {\"loja\": \"Miramar Shopping\", \"vend\": \"Aylla Barros dos Santos\", \"tipo\": \"entrada\", \"hora\": \"13:50\", \"data\": \"2026-06-01\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno tarde\"}, {\"loja\": \"Miramar Shopping\", \"vend\": \"Aylla Barros dos Santos\", \"tipo\": \"saida_almoco\", \"hora\": \"16:50\", \"data\": \"2026-06-01\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Miramar Shopping\", \"vend\": \"Aylla Barros dos Santos\", \"tipo\": \"retorno_almoco\", \"hora\": \"17:50\", \"data\": \"2026-06-01\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Miramar Shopping\", \"vend\": \"Aylla Barros dos Santos\", \"tipo\": \"saida\", \"hora\": \"22:10\", \"data\": \"2026-06-01\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno tarde\"}]");
+  if(!localStorage.getItem("ponto_Miramar Shopping_2026-06-02")) localStorage.setItem("ponto_Miramar Shopping_2026-06-02", "[{\"loja\": \"Miramar Shopping\", \"vend\": \"Mirella Macedo Di Renzo\", \"tipo\": \"entrada\", \"hora\": \"09:40\", \"data\": \"2026-06-02\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}, {\"loja\": \"Miramar Shopping\", \"vend\": \"Mirella Macedo Di Renzo\", \"tipo\": \"saida_almoco\", \"hora\": \"12:40\", \"data\": \"2026-06-02\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Miramar Shopping\", \"vend\": \"Mirella Macedo Di Renzo\", \"tipo\": \"retorno_almoco\", \"hora\": \"13:40\", \"data\": \"2026-06-02\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Miramar Shopping\", \"vend\": \"Mirella Macedo Di Renzo\", \"tipo\": \"saida\", \"hora\": \"18:00\", \"data\": \"2026-06-02\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}, {\"loja\": \"Miramar Shopping\", \"vend\": \"Jessika Cristine Millan dos Santos\", \"tipo\": \"entrada\", \"hora\": \"13:50\", \"data\": \"2026-06-02\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno tarde\"}, {\"loja\": \"Miramar Shopping\", \"vend\": \"Jessika Cristine Millan dos Santos\", \"tipo\": \"saida_almoco\", \"hora\": \"16:50\", \"data\": \"2026-06-02\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Miramar Shopping\", \"vend\": \"Jessika Cristine Millan dos Santos\", \"tipo\": \"retorno_almoco\", \"hora\": \"17:50\", \"data\": \"2026-06-02\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Miramar Shopping\", \"vend\": \"Jessika Cristine Millan dos Santos\", \"tipo\": \"saida\", \"hora\": \"22:10\", \"data\": \"2026-06-02\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno tarde\"}]");
+  if(!localStorage.getItem("ponto_Miramar Shopping_2026-06-03")) localStorage.setItem("ponto_Miramar Shopping_2026-06-03", "[{\"loja\": \"Miramar Shopping\", \"vend\": \"Mirella Macedo Di Renzo\", \"tipo\": \"entrada\", \"hora\": \"09:40\", \"data\": \"2026-06-03\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}, {\"loja\": \"Miramar Shopping\", \"vend\": \"Mirella Macedo Di Renzo\", \"tipo\": \"saida_almoco\", \"hora\": \"12:40\", \"data\": \"2026-06-03\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Miramar Shopping\", \"vend\": \"Mirella Macedo Di Renzo\", \"tipo\": \"retorno_almoco\", \"hora\": \"13:40\", \"data\": \"2026-06-03\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Miramar Shopping\", \"vend\": \"Mirella Macedo Di Renzo\", \"tipo\": \"saida\", \"hora\": \"18:00\", \"data\": \"2026-06-03\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}, {\"loja\": \"Miramar Shopping\", \"vend\": \"Jessika Cristine Millan dos Santos\", \"tipo\": \"entrada\", \"hora\": \"13:50\", \"data\": \"2026-06-03\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno tarde\"}, {\"loja\": \"Miramar Shopping\", \"vend\": \"Jessika Cristine Millan dos Santos\", \"tipo\": \"saida_almoco\", \"hora\": \"16:50\", \"data\": \"2026-06-03\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Miramar Shopping\", \"vend\": \"Jessika Cristine Millan dos Santos\", \"tipo\": \"retorno_almoco\", \"hora\": \"17:50\", \"data\": \"2026-06-03\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Miramar Shopping\", \"vend\": \"Jessika Cristine Millan dos Santos\", \"tipo\": \"saida\", \"hora\": \"22:10\", \"data\": \"2026-06-03\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno tarde\"}, {\"loja\": \"Miramar Shopping\", \"vend\": \"Aylla Barros dos Santos\", \"tipo\": \"entrada\", \"hora\": \"13:50\", \"data\": \"2026-06-03\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno tarde\"}, {\"loja\": \"Miramar Shopping\", \"vend\": \"Aylla Barros dos Santos\", \"tipo\": \"saida_almoco\", \"hora\": \"16:50\", \"data\": \"2026-06-03\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Miramar Shopping\", \"vend\": \"Aylla Barros dos Santos\", \"tipo\": \"retorno_almoco\", \"hora\": \"17:50\", \"data\": \"2026-06-03\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Miramar Shopping\", \"vend\": \"Aylla Barros dos Santos\", \"tipo\": \"saida\", \"hora\": \"22:10\", \"data\": \"2026-06-03\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno tarde\"}]");
+  if(!localStorage.getItem("ponto_Miramar Shopping_2026-06-04")) localStorage.setItem("ponto_Miramar Shopping_2026-06-04", "[{\"loja\": \"Miramar Shopping\", \"vend\": \"Mirella Macedo Di Renzo\", \"tipo\": \"entrada\", \"hora\": \"09:40\", \"data\": \"2026-06-04\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}, {\"loja\": \"Miramar Shopping\", \"vend\": \"Mirella Macedo Di Renzo\", \"tipo\": \"saida_almoco\", \"hora\": \"12:40\", \"data\": \"2026-06-04\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Miramar Shopping\", \"vend\": \"Mirella Macedo Di Renzo\", \"tipo\": \"retorno_almoco\", \"hora\": \"13:40\", \"data\": \"2026-06-04\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Miramar Shopping\", \"vend\": \"Mirella Macedo Di Renzo\", \"tipo\": \"saida\", \"hora\": \"18:00\", \"data\": \"2026-06-04\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}, {\"loja\": \"Miramar Shopping\", \"vend\": \"Jessika Cristine Millan dos Santos\", \"tipo\": \"entrada\", \"hora\": \"13:50\", \"data\": \"2026-06-04\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno tarde\"}, {\"loja\": \"Miramar Shopping\", \"vend\": \"Jessika Cristine Millan dos Santos\", \"tipo\": \"saida_almoco\", \"hora\": \"16:50\", \"data\": \"2026-06-04\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Miramar Shopping\", \"vend\": \"Jessika Cristine Millan dos Santos\", \"tipo\": \"retorno_almoco\", \"hora\": \"17:50\", \"data\": \"2026-06-04\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Miramar Shopping\", \"vend\": \"Jessika Cristine Millan dos Santos\", \"tipo\": \"saida\", \"hora\": \"22:10\", \"data\": \"2026-06-04\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno tarde\"}, {\"loja\": \"Miramar Shopping\", \"vend\": \"Aylla Barros dos Santos\", \"tipo\": \"entrada\", \"hora\": \"13:50\", \"data\": \"2026-06-04\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno tarde\"}, {\"loja\": \"Miramar Shopping\", \"vend\": \"Aylla Barros dos Santos\", \"tipo\": \"saida_almoco\", \"hora\": \"16:50\", \"data\": \"2026-06-04\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Miramar Shopping\", \"vend\": \"Aylla Barros dos Santos\", \"tipo\": \"retorno_almoco\", \"hora\": \"17:50\", \"data\": \"2026-06-04\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Miramar Shopping\", \"vend\": \"Aylla Barros dos Santos\", \"tipo\": \"saida\", \"hora\": \"22:10\", \"data\": \"2026-06-04\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno tarde\"}]");
+  if(!localStorage.getItem("ponto_Miramar Shopping_2026-06-05")) localStorage.setItem("ponto_Miramar Shopping_2026-06-05", "[{\"loja\": \"Miramar Shopping\", \"vend\": \"Mirella Macedo Di Renzo\", \"tipo\": \"entrada\", \"hora\": \"09:40\", \"data\": \"2026-06-05\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}, {\"loja\": \"Miramar Shopping\", \"vend\": \"Mirella Macedo Di Renzo\", \"tipo\": \"saida_almoco\", \"hora\": \"12:40\", \"data\": \"2026-06-05\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Miramar Shopping\", \"vend\": \"Mirella Macedo Di Renzo\", \"tipo\": \"retorno_almoco\", \"hora\": \"13:40\", \"data\": \"2026-06-05\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Miramar Shopping\", \"vend\": \"Mirella Macedo Di Renzo\", \"tipo\": \"saida\", \"hora\": \"18:00\", \"data\": \"2026-06-05\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}, {\"loja\": \"Miramar Shopping\", \"vend\": \"Jessika Cristine Millan dos Santos\", \"tipo\": \"entrada\", \"hora\": \"13:50\", \"data\": \"2026-06-05\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno tarde\"}, {\"loja\": \"Miramar Shopping\", \"vend\": \"Jessika Cristine Millan dos Santos\", \"tipo\": \"saida_almoco\", \"hora\": \"16:50\", \"data\": \"2026-06-05\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Miramar Shopping\", \"vend\": \"Jessika Cristine Millan dos Santos\", \"tipo\": \"retorno_almoco\", \"hora\": \"17:50\", \"data\": \"2026-06-05\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Miramar Shopping\", \"vend\": \"Jessika Cristine Millan dos Santos\", \"tipo\": \"saida\", \"hora\": \"22:10\", \"data\": \"2026-06-05\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno tarde\"}, {\"loja\": \"Miramar Shopping\", \"vend\": \"Aylla Barros dos Santos\", \"tipo\": \"entrada\", \"hora\": \"13:50\", \"data\": \"2026-06-05\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno tarde\"}, {\"loja\": \"Miramar Shopping\", \"vend\": \"Aylla Barros dos Santos\", \"tipo\": \"saida_almoco\", \"hora\": \"16:50\", \"data\": \"2026-06-05\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Miramar Shopping\", \"vend\": \"Aylla Barros dos Santos\", \"tipo\": \"retorno_almoco\", \"hora\": \"17:50\", \"data\": \"2026-06-05\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Miramar Shopping\", \"vend\": \"Aylla Barros dos Santos\", \"tipo\": \"saida\", \"hora\": \"22:10\", \"data\": \"2026-06-05\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno tarde\"}]");
+  if(!localStorage.getItem("ponto_Miramar Shopping_2026-06-06")) localStorage.setItem("ponto_Miramar Shopping_2026-06-06", "[{\"loja\": \"Miramar Shopping\", \"vend\": \"Mirella Macedo Di Renzo\", \"tipo\": \"entrada\", \"hora\": \"09:40\", \"data\": \"2026-06-06\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}, {\"loja\": \"Miramar Shopping\", \"vend\": \"Mirella Macedo Di Renzo\", \"tipo\": \"saida_almoco\", \"hora\": \"12:40\", \"data\": \"2026-06-06\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Miramar Shopping\", \"vend\": \"Mirella Macedo Di Renzo\", \"tipo\": \"retorno_almoco\", \"hora\": \"13:40\", \"data\": \"2026-06-06\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Miramar Shopping\", \"vend\": \"Mirella Macedo Di Renzo\", \"tipo\": \"saida\", \"hora\": \"18:00\", \"data\": \"2026-06-06\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}, {\"loja\": \"Miramar Shopping\", \"vend\": \"Jessika Cristine Millan dos Santos\", \"tipo\": \"entrada\", \"hora\": \"13:50\", \"data\": \"2026-06-06\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno tarde\"}, {\"loja\": \"Miramar Shopping\", \"vend\": \"Jessika Cristine Millan dos Santos\", \"tipo\": \"saida_almoco\", \"hora\": \"16:50\", \"data\": \"2026-06-06\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Miramar Shopping\", \"vend\": \"Jessika Cristine Millan dos Santos\", \"tipo\": \"retorno_almoco\", \"hora\": \"17:50\", \"data\": \"2026-06-06\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Miramar Shopping\", \"vend\": \"Jessika Cristine Millan dos Santos\", \"tipo\": \"saida\", \"hora\": \"22:10\", \"data\": \"2026-06-06\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno tarde\"}, {\"loja\": \"Miramar Shopping\", \"vend\": \"Aylla Barros dos Santos\", \"tipo\": \"entrada\", \"hora\": \"13:50\", \"data\": \"2026-06-06\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno tarde\"}, {\"loja\": \"Miramar Shopping\", \"vend\": \"Aylla Barros dos Santos\", \"tipo\": \"saida_almoco\", \"hora\": \"16:50\", \"data\": \"2026-06-06\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Miramar Shopping\", \"vend\": \"Aylla Barros dos Santos\", \"tipo\": \"retorno_almoco\", \"hora\": \"17:50\", \"data\": \"2026-06-06\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Miramar Shopping\", \"vend\": \"Aylla Barros dos Santos\", \"tipo\": \"saida\", \"hora\": \"22:10\", \"data\": \"2026-06-06\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno tarde\"}]");
+  if(!localStorage.getItem("ponto_Miramar Shopping_2026-06-07")) localStorage.setItem("ponto_Miramar Shopping_2026-06-07", "[{\"loja\": \"Miramar Shopping\", \"vend\": \"Mirella Macedo Di Renzo\", \"tipo\": \"entrada\", \"hora\": \"09:40\", \"data\": \"2026-06-07\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}, {\"loja\": \"Miramar Shopping\", \"vend\": \"Mirella Macedo Di Renzo\", \"tipo\": \"saida_almoco\", \"hora\": \"12:40\", \"data\": \"2026-06-07\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Miramar Shopping\", \"vend\": \"Mirella Macedo Di Renzo\", \"tipo\": \"retorno_almoco\", \"hora\": \"13:40\", \"data\": \"2026-06-07\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Miramar Shopping\", \"vend\": \"Mirella Macedo Di Renzo\", \"tipo\": \"saida\", \"hora\": \"18:00\", \"data\": \"2026-06-07\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}, {\"loja\": \"Miramar Shopping\", \"vend\": \"Jessika Cristine Millan dos Santos\", \"tipo\": \"entrada\", \"hora\": \"13:50\", \"data\": \"2026-06-07\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno tarde\"}, {\"loja\": \"Miramar Shopping\", \"vend\": \"Jessika Cristine Millan dos Santos\", \"tipo\": \"saida_almoco\", \"hora\": \"16:50\", \"data\": \"2026-06-07\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Miramar Shopping\", \"vend\": \"Jessika Cristine Millan dos Santos\", \"tipo\": \"retorno_almoco\", \"hora\": \"17:50\", \"data\": \"2026-06-07\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Miramar Shopping\", \"vend\": \"Jessika Cristine Millan dos Santos\", \"tipo\": \"saida\", \"hora\": \"22:10\", \"data\": \"2026-06-07\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno tarde\"}, {\"loja\": \"Miramar Shopping\", \"vend\": \"Aylla Barros dos Santos\", \"tipo\": \"entrada\", \"hora\": \"13:50\", \"data\": \"2026-06-07\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno tarde\"}, {\"loja\": \"Miramar Shopping\", \"vend\": \"Aylla Barros dos Santos\", \"tipo\": \"saida_almoco\", \"hora\": \"16:50\", \"data\": \"2026-06-07\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Miramar Shopping\", \"vend\": \"Aylla Barros dos Santos\", \"tipo\": \"retorno_almoco\", \"hora\": \"17:50\", \"data\": \"2026-06-07\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Miramar Shopping\", \"vend\": \"Aylla Barros dos Santos\", \"tipo\": \"saida\", \"hora\": \"22:10\", \"data\": \"2026-06-07\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno tarde\"}]");
+  if(!localStorage.getItem("ponto_Miramar Shopping_2026-06-08")) localStorage.setItem("ponto_Miramar Shopping_2026-06-08", "[{\"loja\": \"Miramar Shopping\", \"vend\": \"Mirella Macedo Di Renzo\", \"tipo\": \"entrada\", \"hora\": \"09:40\", \"data\": \"2026-06-08\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}, {\"loja\": \"Miramar Shopping\", \"vend\": \"Mirella Macedo Di Renzo\", \"tipo\": \"saida_almoco\", \"hora\": \"12:40\", \"data\": \"2026-06-08\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Miramar Shopping\", \"vend\": \"Mirella Macedo Di Renzo\", \"tipo\": \"retorno_almoco\", \"hora\": \"13:40\", \"data\": \"2026-06-08\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Miramar Shopping\", \"vend\": \"Mirella Macedo Di Renzo\", \"tipo\": \"saida\", \"hora\": \"18:00\", \"data\": \"2026-06-08\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}, {\"loja\": \"Miramar Shopping\", \"vend\": \"Aylla Barros dos Santos\", \"tipo\": \"entrada\", \"hora\": \"13:50\", \"data\": \"2026-06-08\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno tarde\"}, {\"loja\": \"Miramar Shopping\", \"vend\": \"Aylla Barros dos Santos\", \"tipo\": \"saida_almoco\", \"hora\": \"16:50\", \"data\": \"2026-06-08\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Miramar Shopping\", \"vend\": \"Aylla Barros dos Santos\", \"tipo\": \"retorno_almoco\", \"hora\": \"17:50\", \"data\": \"2026-06-08\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Miramar Shopping\", \"vend\": \"Aylla Barros dos Santos\", \"tipo\": \"saida\", \"hora\": \"22:10\", \"data\": \"2026-06-08\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno tarde\"}]");
+  if(!localStorage.getItem("ponto_Miramar Shopping_2026-06-09")) localStorage.setItem("ponto_Miramar Shopping_2026-06-09", "[{\"loja\": \"Miramar Shopping\", \"vend\": \"Mirella Macedo Di Renzo\", \"tipo\": \"entrada\", \"hora\": \"09:40\", \"data\": \"2026-06-09\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}, {\"loja\": \"Miramar Shopping\", \"vend\": \"Mirella Macedo Di Renzo\", \"tipo\": \"saida_almoco\", \"hora\": \"12:40\", \"data\": \"2026-06-09\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Miramar Shopping\", \"vend\": \"Mirella Macedo Di Renzo\", \"tipo\": \"retorno_almoco\", \"hora\": \"13:40\", \"data\": \"2026-06-09\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Miramar Shopping\", \"vend\": \"Mirella Macedo Di Renzo\", \"tipo\": \"saida\", \"hora\": \"18:00\", \"data\": \"2026-06-09\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}, {\"loja\": \"Miramar Shopping\", \"vend\": \"Jessika Cristine Millan dos Santos\", \"tipo\": \"entrada\", \"hora\": \"13:50\", \"data\": \"2026-06-09\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno tarde\"}, {\"loja\": \"Miramar Shopping\", \"vend\": \"Jessika Cristine Millan dos Santos\", \"tipo\": \"saida_almoco\", \"hora\": \"16:50\", \"data\": \"2026-06-09\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Miramar Shopping\", \"vend\": \"Jessika Cristine Millan dos Santos\", \"tipo\": \"retorno_almoco\", \"hora\": \"17:50\", \"data\": \"2026-06-09\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Miramar Shopping\", \"vend\": \"Jessika Cristine Millan dos Santos\", \"tipo\": \"saida\", \"hora\": \"22:10\", \"data\": \"2026-06-09\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno tarde\"}]");
+  if(!localStorage.getItem("ponto_Azevedo Sodr\u00e9_2026-06-01")) localStorage.setItem("ponto_Azevedo Sodr\u00e9_2026-06-01", "[{\"loja\": \"Azevedo Sodr\u00e9\", \"vend\": \"Debora Cristina Olimpio de Oliveira\", \"tipo\": \"entrada\", \"hora\": \"08:30\", \"data\": \"2026-06-01\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}, {\"loja\": \"Azevedo Sodr\u00e9\", \"vend\": \"Debora Cristina Olimpio de Oliveira\", \"tipo\": \"saida_almoco\", \"hora\": \"12:30\", \"data\": \"2026-06-01\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Azevedo Sodr\u00e9\", \"vend\": \"Debora Cristina Olimpio de Oliveira\", \"tipo\": \"retorno_almoco\", \"hora\": \"13:30\", \"data\": \"2026-06-01\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Azevedo Sodr\u00e9\", \"vend\": \"Debora Cristina Olimpio de Oliveira\", \"tipo\": \"saida\", \"hora\": \"16:50\", \"data\": \"2026-06-01\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}, {\"loja\": \"Azevedo Sodr\u00e9\", \"vend\": \"Raisa Vigolo Chaves\", \"tipo\": \"entrada\", \"hora\": \"12:00\", \"data\": \"2026-06-01\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno tarde\"}, {\"loja\": \"Azevedo Sodr\u00e9\", \"vend\": \"Raisa Vigolo Chaves\", \"tipo\": \"saida_almoco\", \"hora\": \"15:00\", \"data\": \"2026-06-01\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Azevedo Sodr\u00e9\", \"vend\": \"Raisa Vigolo Chaves\", \"tipo\": \"retorno_almoco\", \"hora\": \"16:00\", \"data\": \"2026-06-01\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Azevedo Sodr\u00e9\", \"vend\": \"Raisa Vigolo Chaves\", \"tipo\": \"saida\", \"hora\": \"20:00\", \"data\": \"2026-06-01\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno tarde\"}]");
+  if(!localStorage.getItem("ponto_Azevedo Sodr\u00e9_2026-06-02")) localStorage.setItem("ponto_Azevedo Sodr\u00e9_2026-06-02", "[{\"loja\": \"Azevedo Sodr\u00e9\", \"vend\": \"Debora Cristina Olimpio de Oliveira\", \"tipo\": \"entrada\", \"hora\": \"08:30\", \"data\": \"2026-06-02\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}, {\"loja\": \"Azevedo Sodr\u00e9\", \"vend\": \"Debora Cristina Olimpio de Oliveira\", \"tipo\": \"saida_almoco\", \"hora\": \"12:30\", \"data\": \"2026-06-02\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Azevedo Sodr\u00e9\", \"vend\": \"Debora Cristina Olimpio de Oliveira\", \"tipo\": \"retorno_almoco\", \"hora\": \"13:30\", \"data\": \"2026-06-02\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Azevedo Sodr\u00e9\", \"vend\": \"Debora Cristina Olimpio de Oliveira\", \"tipo\": \"saida\", \"hora\": \"16:50\", \"data\": \"2026-06-02\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}, {\"loja\": \"Azevedo Sodr\u00e9\", \"vend\": \"Raisa Vigolo Chaves\", \"tipo\": \"entrada\", \"hora\": \"12:00\", \"data\": \"2026-06-02\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno tarde\"}, {\"loja\": \"Azevedo Sodr\u00e9\", \"vend\": \"Raisa Vigolo Chaves\", \"tipo\": \"saida_almoco\", \"hora\": \"15:00\", \"data\": \"2026-06-02\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Azevedo Sodr\u00e9\", \"vend\": \"Raisa Vigolo Chaves\", \"tipo\": \"retorno_almoco\", \"hora\": \"16:00\", \"data\": \"2026-06-02\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Azevedo Sodr\u00e9\", \"vend\": \"Raisa Vigolo Chaves\", \"tipo\": \"saida\", \"hora\": \"20:00\", \"data\": \"2026-06-02\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno tarde\"}]");
+  if(!localStorage.getItem("ponto_Azevedo Sodr\u00e9_2026-06-03")) localStorage.setItem("ponto_Azevedo Sodr\u00e9_2026-06-03", "[{\"loja\": \"Azevedo Sodr\u00e9\", \"vend\": \"Debora Cristina Olimpio de Oliveira\", \"tipo\": \"entrada\", \"hora\": \"08:30\", \"data\": \"2026-06-03\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}, {\"loja\": \"Azevedo Sodr\u00e9\", \"vend\": \"Debora Cristina Olimpio de Oliveira\", \"tipo\": \"saida_almoco\", \"hora\": \"12:30\", \"data\": \"2026-06-03\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Azevedo Sodr\u00e9\", \"vend\": \"Debora Cristina Olimpio de Oliveira\", \"tipo\": \"retorno_almoco\", \"hora\": \"13:30\", \"data\": \"2026-06-03\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Azevedo Sodr\u00e9\", \"vend\": \"Debora Cristina Olimpio de Oliveira\", \"tipo\": \"saida\", \"hora\": \"16:50\", \"data\": \"2026-06-03\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}, {\"loja\": \"Azevedo Sodr\u00e9\", \"vend\": \"Raisa Vigolo Chaves\", \"tipo\": \"entrada\", \"hora\": \"12:00\", \"data\": \"2026-06-03\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno tarde\"}, {\"loja\": \"Azevedo Sodr\u00e9\", \"vend\": \"Raisa Vigolo Chaves\", \"tipo\": \"saida_almoco\", \"hora\": \"15:00\", \"data\": \"2026-06-03\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Azevedo Sodr\u00e9\", \"vend\": \"Raisa Vigolo Chaves\", \"tipo\": \"retorno_almoco\", \"hora\": \"16:00\", \"data\": \"2026-06-03\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Azevedo Sodr\u00e9\", \"vend\": \"Raisa Vigolo Chaves\", \"tipo\": \"saida\", \"hora\": \"20:00\", \"data\": \"2026-06-03\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno tarde\"}]");
+  if(!localStorage.getItem("ponto_Azevedo Sodr\u00e9_2026-06-05")) localStorage.setItem("ponto_Azevedo Sodr\u00e9_2026-06-05", "[{\"loja\": \"Azevedo Sodr\u00e9\", \"vend\": \"Debora Cristina Olimpio de Oliveira\", \"tipo\": \"entrada\", \"hora\": \"08:30\", \"data\": \"2026-06-05\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}, {\"loja\": \"Azevedo Sodr\u00e9\", \"vend\": \"Debora Cristina Olimpio de Oliveira\", \"tipo\": \"saida_almoco\", \"hora\": \"12:30\", \"data\": \"2026-06-05\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Azevedo Sodr\u00e9\", \"vend\": \"Debora Cristina Olimpio de Oliveira\", \"tipo\": \"retorno_almoco\", \"hora\": \"13:30\", \"data\": \"2026-06-05\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Azevedo Sodr\u00e9\", \"vend\": \"Debora Cristina Olimpio de Oliveira\", \"tipo\": \"saida\", \"hora\": \"16:50\", \"data\": \"2026-06-05\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}, {\"loja\": \"Azevedo Sodr\u00e9\", \"vend\": \"Raisa Vigolo Chaves\", \"tipo\": \"entrada\", \"hora\": \"12:00\", \"data\": \"2026-06-05\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno tarde\"}, {\"loja\": \"Azevedo Sodr\u00e9\", \"vend\": \"Raisa Vigolo Chaves\", \"tipo\": \"saida_almoco\", \"hora\": \"15:00\", \"data\": \"2026-06-05\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Azevedo Sodr\u00e9\", \"vend\": \"Raisa Vigolo Chaves\", \"tipo\": \"retorno_almoco\", \"hora\": \"16:00\", \"data\": \"2026-06-05\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Azevedo Sodr\u00e9\", \"vend\": \"Raisa Vigolo Chaves\", \"tipo\": \"saida\", \"hora\": \"20:00\", \"data\": \"2026-06-05\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno tarde\"}]");
+  if(!localStorage.getItem("ponto_Azevedo Sodr\u00e9_2026-06-06")) localStorage.setItem("ponto_Azevedo Sodr\u00e9_2026-06-06", "[{\"loja\": \"Azevedo Sodr\u00e9\", \"vend\": \"Debora Cristina Olimpio de Oliveira\", \"tipo\": \"entrada\", \"hora\": \"08:30\", \"data\": \"2026-06-06\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}, {\"loja\": \"Azevedo Sodr\u00e9\", \"vend\": \"Debora Cristina Olimpio de Oliveira\", \"tipo\": \"saida_almoco\", \"hora\": \"12:30\", \"data\": \"2026-06-06\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Azevedo Sodr\u00e9\", \"vend\": \"Debora Cristina Olimpio de Oliveira\", \"tipo\": \"retorno_almoco\", \"hora\": \"13:30\", \"data\": \"2026-06-06\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Azevedo Sodr\u00e9\", \"vend\": \"Debora Cristina Olimpio de Oliveira\", \"tipo\": \"saida\", \"hora\": \"16:50\", \"data\": \"2026-06-06\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}, {\"loja\": \"Azevedo Sodr\u00e9\", \"vend\": \"Raisa Vigolo Chaves\", \"tipo\": \"entrada\", \"hora\": \"12:00\", \"data\": \"2026-06-06\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno tarde\"}, {\"loja\": \"Azevedo Sodr\u00e9\", \"vend\": \"Raisa Vigolo Chaves\", \"tipo\": \"saida_almoco\", \"hora\": \"15:00\", \"data\": \"2026-06-06\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Azevedo Sodr\u00e9\", \"vend\": \"Raisa Vigolo Chaves\", \"tipo\": \"retorno_almoco\", \"hora\": \"16:00\", \"data\": \"2026-06-06\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Azevedo Sodr\u00e9\", \"vend\": \"Raisa Vigolo Chaves\", \"tipo\": \"saida\", \"hora\": \"20:00\", \"data\": \"2026-06-06\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno tarde\"}]");
+  if(!localStorage.getItem("ponto_Azevedo Sodr\u00e9_2026-06-08")) localStorage.setItem("ponto_Azevedo Sodr\u00e9_2026-06-08", "[{\"loja\": \"Azevedo Sodr\u00e9\", \"vend\": \"Debora Cristina Olimpio de Oliveira\", \"tipo\": \"entrada\", \"hora\": \"08:30\", \"data\": \"2026-06-08\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}, {\"loja\": \"Azevedo Sodr\u00e9\", \"vend\": \"Debora Cristina Olimpio de Oliveira\", \"tipo\": \"saida_almoco\", \"hora\": \"12:30\", \"data\": \"2026-06-08\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Azevedo Sodr\u00e9\", \"vend\": \"Debora Cristina Olimpio de Oliveira\", \"tipo\": \"retorno_almoco\", \"hora\": \"13:30\", \"data\": \"2026-06-08\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Azevedo Sodr\u00e9\", \"vend\": \"Debora Cristina Olimpio de Oliveira\", \"tipo\": \"saida\", \"hora\": \"16:50\", \"data\": \"2026-06-08\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}, {\"loja\": \"Azevedo Sodr\u00e9\", \"vend\": \"Raisa Vigolo Chaves\", \"tipo\": \"entrada\", \"hora\": \"12:00\", \"data\": \"2026-06-08\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno tarde\"}, {\"loja\": \"Azevedo Sodr\u00e9\", \"vend\": \"Raisa Vigolo Chaves\", \"tipo\": \"saida_almoco\", \"hora\": \"15:00\", \"data\": \"2026-06-08\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Azevedo Sodr\u00e9\", \"vend\": \"Raisa Vigolo Chaves\", \"tipo\": \"retorno_almoco\", \"hora\": \"16:00\", \"data\": \"2026-06-08\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Azevedo Sodr\u00e9\", \"vend\": \"Raisa Vigolo Chaves\", \"tipo\": \"saida\", \"hora\": \"20:00\", \"data\": \"2026-06-08\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno tarde\"}]");
+  if(!localStorage.getItem("ponto_Azevedo Sodr\u00e9_2026-06-09")) localStorage.setItem("ponto_Azevedo Sodr\u00e9_2026-06-09", "[{\"loja\": \"Azevedo Sodr\u00e9\", \"vend\": \"Debora Cristina Olimpio de Oliveira\", \"tipo\": \"entrada\", \"hora\": \"08:30\", \"data\": \"2026-06-09\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}, {\"loja\": \"Azevedo Sodr\u00e9\", \"vend\": \"Debora Cristina Olimpio de Oliveira\", \"tipo\": \"saida_almoco\", \"hora\": \"12:30\", \"data\": \"2026-06-09\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Azevedo Sodr\u00e9\", \"vend\": \"Debora Cristina Olimpio de Oliveira\", \"tipo\": \"retorno_almoco\", \"hora\": \"13:30\", \"data\": \"2026-06-09\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Azevedo Sodr\u00e9\", \"vend\": \"Debora Cristina Olimpio de Oliveira\", \"tipo\": \"saida\", \"hora\": \"16:50\", \"data\": \"2026-06-09\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}, {\"loja\": \"Azevedo Sodr\u00e9\", \"vend\": \"Raisa Vigolo Chaves\", \"tipo\": \"entrada\", \"hora\": \"12:00\", \"data\": \"2026-06-09\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno tarde\"}, {\"loja\": \"Azevedo Sodr\u00e9\", \"vend\": \"Raisa Vigolo Chaves\", \"tipo\": \"saida_almoco\", \"hora\": \"15:00\", \"data\": \"2026-06-09\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Azevedo Sodr\u00e9\", \"vend\": \"Raisa Vigolo Chaves\", \"tipo\": \"retorno_almoco\", \"hora\": \"16:00\", \"data\": \"2026-06-09\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Azevedo Sodr\u00e9\", \"vend\": \"Raisa Vigolo Chaves\", \"tipo\": \"saida\", \"hora\": \"20:00\", \"data\": \"2026-06-09\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno tarde\"}]");
+  if(!localStorage.getItem("ponto_Litoral Plaza_2026-06-01")) localStorage.setItem("ponto_Litoral Plaza_2026-06-01", "[{\"loja\": \"Litoral Plaza\", \"vend\": \"Tain\u00e3 Reis da Costa\", \"tipo\": \"entrada\", \"hora\": \"09:40\", \"data\": \"2026-06-01\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}, {\"loja\": \"Litoral Plaza\", \"vend\": \"Tain\u00e3 Reis da Costa\", \"tipo\": \"saida_almoco\", \"hora\": \"12:40\", \"data\": \"2026-06-01\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Litoral Plaza\", \"vend\": \"Tain\u00e3 Reis da Costa\", \"tipo\": \"retorno_almoco\", \"hora\": \"13:40\", \"data\": \"2026-06-01\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Litoral Plaza\", \"vend\": \"Tain\u00e3 Reis da Costa\", \"tipo\": \"saida\", \"hora\": \"18:00\", \"data\": \"2026-06-01\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}, {\"loja\": \"Litoral Plaza\", \"vend\": \"Dayana Silva de Aguiar\", \"tipo\": \"entrada\", \"hora\": \"09:40\", \"data\": \"2026-06-01\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}, {\"loja\": \"Litoral Plaza\", \"vend\": \"Dayana Silva de Aguiar\", \"tipo\": \"saida_almoco\", \"hora\": \"12:40\", \"data\": \"2026-06-01\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Litoral Plaza\", \"vend\": \"Dayana Silva de Aguiar\", \"tipo\": \"retorno_almoco\", \"hora\": \"13:40\", \"data\": \"2026-06-01\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Litoral Plaza\", \"vend\": \"Dayana Silva de Aguiar\", \"tipo\": \"saida\", \"hora\": \"18:00\", \"data\": \"2026-06-01\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}, {\"loja\": \"Litoral Plaza\", \"vend\": \"Ana Barbara Bispo de Souza\", \"tipo\": \"entrada\", \"hora\": \"09:40\", \"data\": \"2026-06-01\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}, {\"loja\": \"Litoral Plaza\", \"vend\": \"Ana Barbara Bispo de Souza\", \"tipo\": \"saida_almoco\", \"hora\": \"12:40\", \"data\": \"2026-06-01\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Litoral Plaza\", \"vend\": \"Ana Barbara Bispo de Souza\", \"tipo\": \"retorno_almoco\", \"hora\": \"13:40\", \"data\": \"2026-06-01\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Litoral Plaza\", \"vend\": \"Ana Barbara Bispo de Souza\", \"tipo\": \"saida\", \"hora\": \"18:00\", \"data\": \"2026-06-01\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}]");
+  if(!localStorage.getItem("ponto_Litoral Plaza_2026-06-02")) localStorage.setItem("ponto_Litoral Plaza_2026-06-02", "[{\"loja\": \"Litoral Plaza\", \"vend\": \"Tain\u00e3 Reis da Costa\", \"tipo\": \"entrada\", \"hora\": \"09:40\", \"data\": \"2026-06-02\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}, {\"loja\": \"Litoral Plaza\", \"vend\": \"Tain\u00e3 Reis da Costa\", \"tipo\": \"saida_almoco\", \"hora\": \"12:40\", \"data\": \"2026-06-02\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Litoral Plaza\", \"vend\": \"Tain\u00e3 Reis da Costa\", \"tipo\": \"retorno_almoco\", \"hora\": \"13:40\", \"data\": \"2026-06-02\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Litoral Plaza\", \"vend\": \"Tain\u00e3 Reis da Costa\", \"tipo\": \"saida\", \"hora\": \"18:00\", \"data\": \"2026-06-02\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}, {\"loja\": \"Litoral Plaza\", \"vend\": \"Weslayne Karen Nunes\", \"tipo\": \"entrada\", \"hora\": \"09:40\", \"data\": \"2026-06-02\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}, {\"loja\": \"Litoral Plaza\", \"vend\": \"Weslayne Karen Nunes\", \"tipo\": \"saida_almoco\", \"hora\": \"12:40\", \"data\": \"2026-06-02\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Litoral Plaza\", \"vend\": \"Weslayne Karen Nunes\", \"tipo\": \"retorno_almoco\", \"hora\": \"13:40\", \"data\": \"2026-06-02\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Litoral Plaza\", \"vend\": \"Weslayne Karen Nunes\", \"tipo\": \"saida\", \"hora\": \"18:00\", \"data\": \"2026-06-02\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}, {\"loja\": \"Litoral Plaza\", \"vend\": \"Dayana Silva de Aguiar\", \"tipo\": \"entrada\", \"hora\": \"09:40\", \"data\": \"2026-06-02\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}, {\"loja\": \"Litoral Plaza\", \"vend\": \"Dayana Silva de Aguiar\", \"tipo\": \"saida_almoco\", \"hora\": \"12:40\", \"data\": \"2026-06-02\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Litoral Plaza\", \"vend\": \"Dayana Silva de Aguiar\", \"tipo\": \"retorno_almoco\", \"hora\": \"13:40\", \"data\": \"2026-06-02\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Litoral Plaza\", \"vend\": \"Dayana Silva de Aguiar\", \"tipo\": \"saida\", \"hora\": \"18:00\", \"data\": \"2026-06-02\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}, {\"loja\": \"Litoral Plaza\", \"vend\": \"Ana Barbara Bispo de Souza\", \"tipo\": \"entrada\", \"hora\": \"09:40\", \"data\": \"2026-06-02\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}, {\"loja\": \"Litoral Plaza\", \"vend\": \"Ana Barbara Bispo de Souza\", \"tipo\": \"saida_almoco\", \"hora\": \"12:40\", \"data\": \"2026-06-02\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Litoral Plaza\", \"vend\": \"Ana Barbara Bispo de Souza\", \"tipo\": \"retorno_almoco\", \"hora\": \"13:40\", \"data\": \"2026-06-02\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Litoral Plaza\", \"vend\": \"Ana Barbara Bispo de Souza\", \"tipo\": \"saida\", \"hora\": \"18:00\", \"data\": \"2026-06-02\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}]");
+  if(!localStorage.getItem("ponto_Litoral Plaza_2026-06-03")) localStorage.setItem("ponto_Litoral Plaza_2026-06-03", "[{\"loja\": \"Litoral Plaza\", \"vend\": \"Tain\u00e3 Reis da Costa\", \"tipo\": \"entrada\", \"hora\": \"09:40\", \"data\": \"2026-06-03\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}, {\"loja\": \"Litoral Plaza\", \"vend\": \"Tain\u00e3 Reis da Costa\", \"tipo\": \"saida_almoco\", \"hora\": \"12:40\", \"data\": \"2026-06-03\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Litoral Plaza\", \"vend\": \"Tain\u00e3 Reis da Costa\", \"tipo\": \"retorno_almoco\", \"hora\": \"13:40\", \"data\": \"2026-06-03\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Litoral Plaza\", \"vend\": \"Tain\u00e3 Reis da Costa\", \"tipo\": \"saida\", \"hora\": \"18:00\", \"data\": \"2026-06-03\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}, {\"loja\": \"Litoral Plaza\", \"vend\": \"Weslayne Karen Nunes\", \"tipo\": \"entrada\", \"hora\": \"09:40\", \"data\": \"2026-06-03\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}, {\"loja\": \"Litoral Plaza\", \"vend\": \"Weslayne Karen Nunes\", \"tipo\": \"saida_almoco\", \"hora\": \"12:40\", \"data\": \"2026-06-03\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Litoral Plaza\", \"vend\": \"Weslayne Karen Nunes\", \"tipo\": \"retorno_almoco\", \"hora\": \"13:40\", \"data\": \"2026-06-03\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Litoral Plaza\", \"vend\": \"Weslayne Karen Nunes\", \"tipo\": \"saida\", \"hora\": \"18:00\", \"data\": \"2026-06-03\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}, {\"loja\": \"Litoral Plaza\", \"vend\": \"Ana Barbara Bispo de Souza\", \"tipo\": \"entrada\", \"hora\": \"09:40\", \"data\": \"2026-06-03\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}, {\"loja\": \"Litoral Plaza\", \"vend\": \"Ana Barbara Bispo de Souza\", \"tipo\": \"saida_almoco\", \"hora\": \"12:40\", \"data\": \"2026-06-03\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Litoral Plaza\", \"vend\": \"Ana Barbara Bispo de Souza\", \"tipo\": \"retorno_almoco\", \"hora\": \"13:40\", \"data\": \"2026-06-03\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Litoral Plaza\", \"vend\": \"Ana Barbara Bispo de Souza\", \"tipo\": \"saida\", \"hora\": \"18:00\", \"data\": \"2026-06-03\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}]");
+  if(!localStorage.getItem("ponto_Litoral Plaza_2026-06-05")) localStorage.setItem("ponto_Litoral Plaza_2026-06-05", "[{\"loja\": \"Litoral Plaza\", \"vend\": \"Tain\u00e3 Reis da Costa\", \"tipo\": \"entrada\", \"hora\": \"09:40\", \"data\": \"2026-06-05\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}, {\"loja\": \"Litoral Plaza\", \"vend\": \"Tain\u00e3 Reis da Costa\", \"tipo\": \"saida_almoco\", \"hora\": \"12:40\", \"data\": \"2026-06-05\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Litoral Plaza\", \"vend\": \"Tain\u00e3 Reis da Costa\", \"tipo\": \"retorno_almoco\", \"hora\": \"13:40\", \"data\": \"2026-06-05\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Litoral Plaza\", \"vend\": \"Tain\u00e3 Reis da Costa\", \"tipo\": \"saida\", \"hora\": \"18:00\", \"data\": \"2026-06-05\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}, {\"loja\": \"Litoral Plaza\", \"vend\": \"Weslayne Karen Nunes\", \"tipo\": \"entrada\", \"hora\": \"09:40\", \"data\": \"2026-06-05\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}, {\"loja\": \"Litoral Plaza\", \"vend\": \"Weslayne Karen Nunes\", \"tipo\": \"saida_almoco\", \"hora\": \"12:40\", \"data\": \"2026-06-05\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Litoral Plaza\", \"vend\": \"Weslayne Karen Nunes\", \"tipo\": \"retorno_almoco\", \"hora\": \"13:40\", \"data\": \"2026-06-05\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Litoral Plaza\", \"vend\": \"Weslayne Karen Nunes\", \"tipo\": \"saida\", \"hora\": \"18:00\", \"data\": \"2026-06-05\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}, {\"loja\": \"Litoral Plaza\", \"vend\": \"Dayana Silva de Aguiar\", \"tipo\": \"entrada\", \"hora\": \"09:40\", \"data\": \"2026-06-05\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}, {\"loja\": \"Litoral Plaza\", \"vend\": \"Dayana Silva de Aguiar\", \"tipo\": \"saida_almoco\", \"hora\": \"12:40\", \"data\": \"2026-06-05\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Litoral Plaza\", \"vend\": \"Dayana Silva de Aguiar\", \"tipo\": \"retorno_almoco\", \"hora\": \"13:40\", \"data\": \"2026-06-05\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Litoral Plaza\", \"vend\": \"Dayana Silva de Aguiar\", \"tipo\": \"saida\", \"hora\": \"18:00\", \"data\": \"2026-06-05\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}, {\"loja\": \"Litoral Plaza\", \"vend\": \"Ana Barbara Bispo de Souza\", \"tipo\": \"entrada\", \"hora\": \"09:40\", \"data\": \"2026-06-05\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}, {\"loja\": \"Litoral Plaza\", \"vend\": \"Ana Barbara Bispo de Souza\", \"tipo\": \"saida_almoco\", \"hora\": \"12:40\", \"data\": \"2026-06-05\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Litoral Plaza\", \"vend\": \"Ana Barbara Bispo de Souza\", \"tipo\": \"retorno_almoco\", \"hora\": \"13:40\", \"data\": \"2026-06-05\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Litoral Plaza\", \"vend\": \"Ana Barbara Bispo de Souza\", \"tipo\": \"saida\", \"hora\": \"18:00\", \"data\": \"2026-06-05\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}]");
+  if(!localStorage.getItem("ponto_Litoral Plaza_2026-06-06")) localStorage.setItem("ponto_Litoral Plaza_2026-06-06", "[{\"loja\": \"Litoral Plaza\", \"vend\": \"Tain\u00e3 Reis da Costa\", \"tipo\": \"entrada\", \"hora\": \"09:40\", \"data\": \"2026-06-06\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}, {\"loja\": \"Litoral Plaza\", \"vend\": \"Tain\u00e3 Reis da Costa\", \"tipo\": \"saida_almoco\", \"hora\": \"12:40\", \"data\": \"2026-06-06\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Litoral Plaza\", \"vend\": \"Tain\u00e3 Reis da Costa\", \"tipo\": \"retorno_almoco\", \"hora\": \"13:40\", \"data\": \"2026-06-06\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Litoral Plaza\", \"vend\": \"Tain\u00e3 Reis da Costa\", \"tipo\": \"saida\", \"hora\": \"18:00\", \"data\": \"2026-06-06\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}, {\"loja\": \"Litoral Plaza\", \"vend\": \"Weslayne Karen Nunes\", \"tipo\": \"entrada\", \"hora\": \"09:40\", \"data\": \"2026-06-06\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}, {\"loja\": \"Litoral Plaza\", \"vend\": \"Weslayne Karen Nunes\", \"tipo\": \"saida_almoco\", \"hora\": \"12:40\", \"data\": \"2026-06-06\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Litoral Plaza\", \"vend\": \"Weslayne Karen Nunes\", \"tipo\": \"retorno_almoco\", \"hora\": \"13:40\", \"data\": \"2026-06-06\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Litoral Plaza\", \"vend\": \"Weslayne Karen Nunes\", \"tipo\": \"saida\", \"hora\": \"18:00\", \"data\": \"2026-06-06\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}, {\"loja\": \"Litoral Plaza\", \"vend\": \"Dayana Silva de Aguiar\", \"tipo\": \"entrada\", \"hora\": \"09:40\", \"data\": \"2026-06-06\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}, {\"loja\": \"Litoral Plaza\", \"vend\": \"Dayana Silva de Aguiar\", \"tipo\": \"saida_almoco\", \"hora\": \"12:40\", \"data\": \"2026-06-06\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Litoral Plaza\", \"vend\": \"Dayana Silva de Aguiar\", \"tipo\": \"retorno_almoco\", \"hora\": \"13:40\", \"data\": \"2026-06-06\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Litoral Plaza\", \"vend\": \"Dayana Silva de Aguiar\", \"tipo\": \"saida\", \"hora\": \"18:00\", \"data\": \"2026-06-06\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}, {\"loja\": \"Litoral Plaza\", \"vend\": \"Ana Barbara Bispo de Souza\", \"tipo\": \"entrada\", \"hora\": \"09:40\", \"data\": \"2026-06-06\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}, {\"loja\": \"Litoral Plaza\", \"vend\": \"Ana Barbara Bispo de Souza\", \"tipo\": \"saida_almoco\", \"hora\": \"12:40\", \"data\": \"2026-06-06\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Litoral Plaza\", \"vend\": \"Ana Barbara Bispo de Souza\", \"tipo\": \"retorno_almoco\", \"hora\": \"13:40\", \"data\": \"2026-06-06\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Litoral Plaza\", \"vend\": \"Ana Barbara Bispo de Souza\", \"tipo\": \"saida\", \"hora\": \"18:00\", \"data\": \"2026-06-06\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}]");
+  if(!localStorage.getItem("ponto_Litoral Plaza_2026-06-08")) localStorage.setItem("ponto_Litoral Plaza_2026-06-08", "[{\"loja\": \"Litoral Plaza\", \"vend\": \"Tain\u00e3 Reis da Costa\", \"tipo\": \"entrada\", \"hora\": \"09:40\", \"data\": \"2026-06-08\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}, {\"loja\": \"Litoral Plaza\", \"vend\": \"Tain\u00e3 Reis da Costa\", \"tipo\": \"saida_almoco\", \"hora\": \"12:40\", \"data\": \"2026-06-08\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Litoral Plaza\", \"vend\": \"Tain\u00e3 Reis da Costa\", \"tipo\": \"retorno_almoco\", \"hora\": \"13:40\", \"data\": \"2026-06-08\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Litoral Plaza\", \"vend\": \"Tain\u00e3 Reis da Costa\", \"tipo\": \"saida\", \"hora\": \"18:00\", \"data\": \"2026-06-08\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}, {\"loja\": \"Litoral Plaza\", \"vend\": \"Dayana Silva de Aguiar\", \"tipo\": \"entrada\", \"hora\": \"09:40\", \"data\": \"2026-06-08\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}, {\"loja\": \"Litoral Plaza\", \"vend\": \"Dayana Silva de Aguiar\", \"tipo\": \"saida_almoco\", \"hora\": \"12:40\", \"data\": \"2026-06-08\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Litoral Plaza\", \"vend\": \"Dayana Silva de Aguiar\", \"tipo\": \"retorno_almoco\", \"hora\": \"13:40\", \"data\": \"2026-06-08\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Litoral Plaza\", \"vend\": \"Dayana Silva de Aguiar\", \"tipo\": \"saida\", \"hora\": \"18:00\", \"data\": \"2026-06-08\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}, {\"loja\": \"Litoral Plaza\", \"vend\": \"Ana Barbara Bispo de Souza\", \"tipo\": \"entrada\", \"hora\": \"09:40\", \"data\": \"2026-06-08\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}, {\"loja\": \"Litoral Plaza\", \"vend\": \"Ana Barbara Bispo de Souza\", \"tipo\": \"saida_almoco\", \"hora\": \"12:40\", \"data\": \"2026-06-08\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Litoral Plaza\", \"vend\": \"Ana Barbara Bispo de Souza\", \"tipo\": \"retorno_almoco\", \"hora\": \"13:40\", \"data\": \"2026-06-08\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Litoral Plaza\", \"vend\": \"Ana Barbara Bispo de Souza\", \"tipo\": \"saida\", \"hora\": \"18:00\", \"data\": \"2026-06-08\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}]");
+  if(!localStorage.getItem("ponto_Litoral Plaza_2026-06-09")) localStorage.setItem("ponto_Litoral Plaza_2026-06-09", "[{\"loja\": \"Litoral Plaza\", \"vend\": \"Tain\u00e3 Reis da Costa\", \"tipo\": \"entrada\", \"hora\": \"09:40\", \"data\": \"2026-06-09\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}, {\"loja\": \"Litoral Plaza\", \"vend\": \"Tain\u00e3 Reis da Costa\", \"tipo\": \"saida_almoco\", \"hora\": \"12:40\", \"data\": \"2026-06-09\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Litoral Plaza\", \"vend\": \"Tain\u00e3 Reis da Costa\", \"tipo\": \"retorno_almoco\", \"hora\": \"13:40\", \"data\": \"2026-06-09\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Litoral Plaza\", \"vend\": \"Tain\u00e3 Reis da Costa\", \"tipo\": \"saida\", \"hora\": \"18:00\", \"data\": \"2026-06-09\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}, {\"loja\": \"Litoral Plaza\", \"vend\": \"Weslayne Karen Nunes\", \"tipo\": \"entrada\", \"hora\": \"09:40\", \"data\": \"2026-06-09\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}, {\"loja\": \"Litoral Plaza\", \"vend\": \"Weslayne Karen Nunes\", \"tipo\": \"saida_almoco\", \"hora\": \"12:40\", \"data\": \"2026-06-09\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Litoral Plaza\", \"vend\": \"Weslayne Karen Nunes\", \"tipo\": \"retorno_almoco\", \"hora\": \"13:40\", \"data\": \"2026-06-09\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Litoral Plaza\", \"vend\": \"Weslayne Karen Nunes\", \"tipo\": \"saida\", \"hora\": \"18:00\", \"data\": \"2026-06-09\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}, {\"loja\": \"Litoral Plaza\", \"vend\": \"Dayana Silva de Aguiar\", \"tipo\": \"entrada\", \"hora\": \"09:40\", \"data\": \"2026-06-09\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}, {\"loja\": \"Litoral Plaza\", \"vend\": \"Dayana Silva de Aguiar\", \"tipo\": \"saida_almoco\", \"hora\": \"12:40\", \"data\": \"2026-06-09\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Litoral Plaza\", \"vend\": \"Dayana Silva de Aguiar\", \"tipo\": \"retorno_almoco\", \"hora\": \"13:40\", \"data\": \"2026-06-09\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Litoral Plaza\", \"vend\": \"Dayana Silva de Aguiar\", \"tipo\": \"saida\", \"hora\": \"18:00\", \"data\": \"2026-06-09\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}]");
+  if(!localStorage.getItem("ponto_Litoral Plaza_2026-06-04")) localStorage.setItem("ponto_Litoral Plaza_2026-06-04", "[{\"loja\": \"Litoral Plaza\", \"vend\": \"Weslayne Karen Nunes\", \"tipo\": \"entrada\", \"hora\": \"09:40\", \"data\": \"2026-06-04\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}, {\"loja\": \"Litoral Plaza\", \"vend\": \"Weslayne Karen Nunes\", \"tipo\": \"saida_almoco\", \"hora\": \"12:40\", \"data\": \"2026-06-04\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Litoral Plaza\", \"vend\": \"Weslayne Karen Nunes\", \"tipo\": \"retorno_almoco\", \"hora\": \"13:40\", \"data\": \"2026-06-04\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Litoral Plaza\", \"vend\": \"Weslayne Karen Nunes\", \"tipo\": \"saida\", \"hora\": \"18:00\", \"data\": \"2026-06-04\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}, {\"loja\": \"Litoral Plaza\", \"vend\": \"Dayana Silva de Aguiar\", \"tipo\": \"entrada\", \"hora\": \"09:40\", \"data\": \"2026-06-04\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}, {\"loja\": \"Litoral Plaza\", \"vend\": \"Dayana Silva de Aguiar\", \"tipo\": \"saida_almoco\", \"hora\": \"12:40\", \"data\": \"2026-06-04\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Litoral Plaza\", \"vend\": \"Dayana Silva de Aguiar\", \"tipo\": \"retorno_almoco\", \"hora\": \"13:40\", \"data\": \"2026-06-04\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Litoral Plaza\", \"vend\": \"Dayana Silva de Aguiar\", \"tipo\": \"saida\", \"hora\": \"18:00\", \"data\": \"2026-06-04\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}]");
+  if(!localStorage.getItem("ponto_Litoral Plaza_2026-06-07")) localStorage.setItem("ponto_Litoral Plaza_2026-06-07", "[{\"loja\": \"Litoral Plaza\", \"vend\": \"Weslayne Karen Nunes\", \"tipo\": \"entrada\", \"hora\": \"09:40\", \"data\": \"2026-06-07\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}, {\"loja\": \"Litoral Plaza\", \"vend\": \"Weslayne Karen Nunes\", \"tipo\": \"saida_almoco\", \"hora\": \"12:40\", \"data\": \"2026-06-07\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Litoral Plaza\", \"vend\": \"Weslayne Karen Nunes\", \"tipo\": \"retorno_almoco\", \"hora\": \"13:40\", \"data\": \"2026-06-07\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Litoral Plaza\", \"vend\": \"Weslayne Karen Nunes\", \"tipo\": \"saida\", \"hora\": \"18:00\", \"data\": \"2026-06-07\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}, {\"loja\": \"Litoral Plaza\", \"vend\": \"Ana Barbara Bispo de Souza\", \"tipo\": \"entrada\", \"hora\": \"09:40\", \"data\": \"2026-06-07\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}, {\"loja\": \"Litoral Plaza\", \"vend\": \"Ana Barbara Bispo de Souza\", \"tipo\": \"saida_almoco\", \"hora\": \"12:40\", \"data\": \"2026-06-07\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Litoral Plaza\", \"vend\": \"Ana Barbara Bispo de Souza\", \"tipo\": \"retorno_almoco\", \"hora\": \"13:40\", \"data\": \"2026-06-07\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Litoral Plaza\", \"vend\": \"Ana Barbara Bispo de Souza\", \"tipo\": \"saida\", \"hora\": \"18:00\", \"data\": \"2026-06-07\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}]");
+  if(!localStorage.getItem("ponto_Bioritmo_2026-06-01")) localStorage.setItem("ponto_Bioritmo_2026-06-01", "[{\"loja\": \"Bioritmo\", \"vend\": \"Maria Eduarda Lisboa Silva\", \"tipo\": \"entrada\", \"hora\": \"07:00\", \"data\": \"2026-06-01\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}, {\"loja\": \"Bioritmo\", \"vend\": \"Maria Eduarda Lisboa Silva\", \"tipo\": \"saida_almoco\", \"hora\": \"11:00\", \"data\": \"2026-06-01\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Bioritmo\", \"vend\": \"Maria Eduarda Lisboa Silva\", \"tipo\": \"retorno_almoco\", \"hora\": \"12:00\", \"data\": \"2026-06-01\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Bioritmo\", \"vend\": \"Maria Eduarda Lisboa Silva\", \"tipo\": \"saida\", \"hora\": \"15:00\", \"data\": \"2026-06-01\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}, {\"loja\": \"Bioritmo\", \"vend\": \"Fernanda de Souza Rocha\", \"tipo\": \"entrada\", \"hora\": \"13:00\", \"data\": \"2026-06-01\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno tarde\"}, {\"loja\": \"Bioritmo\", \"vend\": \"Fernanda de Souza Rocha\", \"tipo\": \"saida_almoco\", \"hora\": \"16:00\", \"data\": \"2026-06-01\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Bioritmo\", \"vend\": \"Fernanda de Souza Rocha\", \"tipo\": \"retorno_almoco\", \"hora\": \"17:00\", \"data\": \"2026-06-01\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Bioritmo\", \"vend\": \"Fernanda de Souza Rocha\", \"tipo\": \"saida\", \"hora\": \"21:00\", \"data\": \"2026-06-01\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno tarde\"}]");
+  if(!localStorage.getItem("ponto_Bioritmo_2026-06-02")) localStorage.setItem("ponto_Bioritmo_2026-06-02", "[{\"loja\": \"Bioritmo\", \"vend\": \"Maria Eduarda Lisboa Silva\", \"tipo\": \"entrada\", \"hora\": \"07:00\", \"data\": \"2026-06-02\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}, {\"loja\": \"Bioritmo\", \"vend\": \"Maria Eduarda Lisboa Silva\", \"tipo\": \"saida_almoco\", \"hora\": \"11:00\", \"data\": \"2026-06-02\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Bioritmo\", \"vend\": \"Maria Eduarda Lisboa Silva\", \"tipo\": \"retorno_almoco\", \"hora\": \"12:00\", \"data\": \"2026-06-02\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Bioritmo\", \"vend\": \"Maria Eduarda Lisboa Silva\", \"tipo\": \"saida\", \"hora\": \"15:00\", \"data\": \"2026-06-02\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}, {\"loja\": \"Bioritmo\", \"vend\": \"Fernanda de Souza Rocha\", \"tipo\": \"entrada\", \"hora\": \"13:00\", \"data\": \"2026-06-02\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno tarde\"}, {\"loja\": \"Bioritmo\", \"vend\": \"Fernanda de Souza Rocha\", \"tipo\": \"saida_almoco\", \"hora\": \"16:00\", \"data\": \"2026-06-02\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Bioritmo\", \"vend\": \"Fernanda de Souza Rocha\", \"tipo\": \"retorno_almoco\", \"hora\": \"17:00\", \"data\": \"2026-06-02\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Bioritmo\", \"vend\": \"Fernanda de Souza Rocha\", \"tipo\": \"saida\", \"hora\": \"21:00\", \"data\": \"2026-06-02\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno tarde\"}]");
+  if(!localStorage.getItem("ponto_Bioritmo_2026-06-03")) localStorage.setItem("ponto_Bioritmo_2026-06-03", "[{\"loja\": \"Bioritmo\", \"vend\": \"Maria Eduarda Lisboa Silva\", \"tipo\": \"entrada\", \"hora\": \"07:00\", \"data\": \"2026-06-03\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}, {\"loja\": \"Bioritmo\", \"vend\": \"Maria Eduarda Lisboa Silva\", \"tipo\": \"saida_almoco\", \"hora\": \"11:00\", \"data\": \"2026-06-03\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Bioritmo\", \"vend\": \"Maria Eduarda Lisboa Silva\", \"tipo\": \"retorno_almoco\", \"hora\": \"12:00\", \"data\": \"2026-06-03\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Bioritmo\", \"vend\": \"Maria Eduarda Lisboa Silva\", \"tipo\": \"saida\", \"hora\": \"15:00\", \"data\": \"2026-06-03\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}, {\"loja\": \"Bioritmo\", \"vend\": \"Fernanda de Souza Rocha\", \"tipo\": \"entrada\", \"hora\": \"13:00\", \"data\": \"2026-06-03\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno tarde\"}, {\"loja\": \"Bioritmo\", \"vend\": \"Fernanda de Souza Rocha\", \"tipo\": \"saida_almoco\", \"hora\": \"16:00\", \"data\": \"2026-06-03\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Bioritmo\", \"vend\": \"Fernanda de Souza Rocha\", \"tipo\": \"retorno_almoco\", \"hora\": \"17:00\", \"data\": \"2026-06-03\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Bioritmo\", \"vend\": \"Fernanda de Souza Rocha\", \"tipo\": \"saida\", \"hora\": \"21:00\", \"data\": \"2026-06-03\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno tarde\"}]");
+  if(!localStorage.getItem("ponto_Bioritmo_2026-06-04")) localStorage.setItem("ponto_Bioritmo_2026-06-04", "[{\"loja\": \"Bioritmo\", \"vend\": \"Maria Eduarda Lisboa Silva\", \"tipo\": \"entrada\", \"hora\": \"07:00\", \"data\": \"2026-06-04\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}, {\"loja\": \"Bioritmo\", \"vend\": \"Maria Eduarda Lisboa Silva\", \"tipo\": \"saida_almoco\", \"hora\": \"11:00\", \"data\": \"2026-06-04\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Bioritmo\", \"vend\": \"Maria Eduarda Lisboa Silva\", \"tipo\": \"retorno_almoco\", \"hora\": \"12:00\", \"data\": \"2026-06-04\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Bioritmo\", \"vend\": \"Maria Eduarda Lisboa Silva\", \"tipo\": \"saida\", \"hora\": \"15:00\", \"data\": \"2026-06-04\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}]");
+  if(!localStorage.getItem("ponto_Bioritmo_2026-06-05")) localStorage.setItem("ponto_Bioritmo_2026-06-05", "[{\"loja\": \"Bioritmo\", \"vend\": \"Maria Eduarda Lisboa Silva\", \"tipo\": \"entrada\", \"hora\": \"07:00\", \"data\": \"2026-06-05\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}, {\"loja\": \"Bioritmo\", \"vend\": \"Maria Eduarda Lisboa Silva\", \"tipo\": \"saida_almoco\", \"hora\": \"11:00\", \"data\": \"2026-06-05\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Bioritmo\", \"vend\": \"Maria Eduarda Lisboa Silva\", \"tipo\": \"retorno_almoco\", \"hora\": \"12:00\", \"data\": \"2026-06-05\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Bioritmo\", \"vend\": \"Maria Eduarda Lisboa Silva\", \"tipo\": \"saida\", \"hora\": \"15:00\", \"data\": \"2026-06-05\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}, {\"loja\": \"Bioritmo\", \"vend\": \"Fernanda de Souza Rocha\", \"tipo\": \"entrada\", \"hora\": \"13:00\", \"data\": \"2026-06-05\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno tarde\"}, {\"loja\": \"Bioritmo\", \"vend\": \"Fernanda de Souza Rocha\", \"tipo\": \"saida_almoco\", \"hora\": \"16:00\", \"data\": \"2026-06-05\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Bioritmo\", \"vend\": \"Fernanda de Souza Rocha\", \"tipo\": \"retorno_almoco\", \"hora\": \"17:00\", \"data\": \"2026-06-05\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Bioritmo\", \"vend\": \"Fernanda de Souza Rocha\", \"tipo\": \"saida\", \"hora\": \"21:00\", \"data\": \"2026-06-05\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno tarde\"}]");
+  if(!localStorage.getItem("ponto_Bioritmo_2026-06-06")) localStorage.setItem("ponto_Bioritmo_2026-06-06", "[{\"loja\": \"Bioritmo\", \"vend\": \"Maria Eduarda Lisboa Silva\", \"tipo\": \"entrada\", \"hora\": \"07:00\", \"data\": \"2026-06-06\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}, {\"loja\": \"Bioritmo\", \"vend\": \"Maria Eduarda Lisboa Silva\", \"tipo\": \"saida_almoco\", \"hora\": \"11:00\", \"data\": \"2026-06-06\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Bioritmo\", \"vend\": \"Maria Eduarda Lisboa Silva\", \"tipo\": \"retorno_almoco\", \"hora\": \"12:00\", \"data\": \"2026-06-06\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Bioritmo\", \"vend\": \"Maria Eduarda Lisboa Silva\", \"tipo\": \"saida\", \"hora\": \"15:00\", \"data\": \"2026-06-06\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}]");
+  if(!localStorage.getItem("ponto_Bioritmo_2026-06-08")) localStorage.setItem("ponto_Bioritmo_2026-06-08", "[{\"loja\": \"Bioritmo\", \"vend\": \"Maria Eduarda Lisboa Silva\", \"tipo\": \"entrada\", \"hora\": \"07:00\", \"data\": \"2026-06-08\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}, {\"loja\": \"Bioritmo\", \"vend\": \"Maria Eduarda Lisboa Silva\", \"tipo\": \"saida_almoco\", \"hora\": \"11:00\", \"data\": \"2026-06-08\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Bioritmo\", \"vend\": \"Maria Eduarda Lisboa Silva\", \"tipo\": \"retorno_almoco\", \"hora\": \"12:00\", \"data\": \"2026-06-08\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Bioritmo\", \"vend\": \"Maria Eduarda Lisboa Silva\", \"tipo\": \"saida\", \"hora\": \"15:00\", \"data\": \"2026-06-08\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}, {\"loja\": \"Bioritmo\", \"vend\": \"Fernanda de Souza Rocha\", \"tipo\": \"entrada\", \"hora\": \"13:00\", \"data\": \"2026-06-08\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno tarde\"}, {\"loja\": \"Bioritmo\", \"vend\": \"Fernanda de Souza Rocha\", \"tipo\": \"saida_almoco\", \"hora\": \"16:00\", \"data\": \"2026-06-08\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Bioritmo\", \"vend\": \"Fernanda de Souza Rocha\", \"tipo\": \"retorno_almoco\", \"hora\": \"17:00\", \"data\": \"2026-06-08\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Bioritmo\", \"vend\": \"Fernanda de Souza Rocha\", \"tipo\": \"saida\", \"hora\": \"21:00\", \"data\": \"2026-06-08\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno tarde\"}]");
+  if(!localStorage.getItem("ponto_Bioritmo_2026-06-09")) localStorage.setItem("ponto_Bioritmo_2026-06-09", "[{\"loja\": \"Bioritmo\", \"vend\": \"Maria Eduarda Lisboa Silva\", \"tipo\": \"entrada\", \"hora\": \"07:00\", \"data\": \"2026-06-09\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}, {\"loja\": \"Bioritmo\", \"vend\": \"Maria Eduarda Lisboa Silva\", \"tipo\": \"saida_almoco\", \"hora\": \"11:00\", \"data\": \"2026-06-09\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Bioritmo\", \"vend\": \"Maria Eduarda Lisboa Silva\", \"tipo\": \"retorno_almoco\", \"hora\": \"12:00\", \"data\": \"2026-06-09\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Bioritmo\", \"vend\": \"Maria Eduarda Lisboa Silva\", \"tipo\": \"saida\", \"hora\": \"15:00\", \"data\": \"2026-06-09\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno manha\"}, {\"loja\": \"Bioritmo\", \"vend\": \"Fernanda de Souza Rocha\", \"tipo\": \"entrada\", \"hora\": \"13:00\", \"data\": \"2026-06-09\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno tarde\"}, {\"loja\": \"Bioritmo\", \"vend\": \"Fernanda de Souza Rocha\", \"tipo\": \"saida_almoco\", \"hora\": \"16:00\", \"data\": \"2026-06-09\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Bioritmo\", \"vend\": \"Fernanda de Souza Rocha\", \"tipo\": \"retorno_almoco\", \"hora\": \"17:00\", \"data\": \"2026-06-09\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo\"}, {\"loja\": \"Bioritmo\", \"vend\": \"Fernanda de Souza Rocha\", \"tipo\": \"saida\", \"hora\": \"21:00\", \"data\": \"2026-06-09\", \"editado\": true, \"obs\": \"Lan\u00e7amento retroativo turno tarde\"}]");
+})();
+
+// ESCALA JUNHO 2026 PRE-CARREGADA
+(function(){
+  const escalaPre = {"André Luiz dos Anjos|2026-06-03": "folga", "André Luiz dos Anjos|2026-06-07": "folga", "André Luiz dos Anjos|2026-06-12": "folga", "André Luiz dos Anjos|2026-06-16": "folga", "André Luiz dos Anjos|2026-06-22": "folga", "André Luiz dos Anjos|2026-06-29": "folga", "Mariela Parente de Toledo Piza|2026-06-01": "ferias", "Mariela Parente de Toledo Piza|2026-06-02": "ferias", "Mariela Parente de Toledo Piza|2026-06-03": "ferias", "Mariela Parente de Toledo Piza|2026-06-04": "folga", "Mariela Parente de Toledo Piza|2026-06-05": "ferias", "Mariela Parente de Toledo Piza|2026-06-06": "ferias", "Mariela Parente de Toledo Piza|2026-06-07": "folga", "Mariela Parente de Toledo Piza|2026-06-08": "ferias", "Mariela Parente de Toledo Piza|2026-06-09": "ferias", "Mariela Parente de Toledo Piza|2026-06-14": "folga", "Mariela Parente de Toledo Piza|2026-06-21": "folga", "Mariela Parente de Toledo Piza|2026-06-28": "folga", "Raisa Vigolo Chaves|2026-06-07": "folga", "Raisa Vigolo Chaves|2026-06-14": "folga", "Raisa Vigolo Chaves|2026-06-21": "folga", "Raisa Vigolo Chaves|2026-06-28": "folga", "Raisa Vigolo Chaves|2026-06-04": "folga", "Debora Cristina Olimpio de Oliveira|2026-06-07": "folga", "Debora Cristina Olimpio de Oliveira|2026-06-14": "folga", "Debora Cristina Olimpio de Oliveira|2026-06-21": "folga", "Debora Cristina Olimpio de Oliveira|2026-06-28": "folga", "Debora Cristina Olimpio de Oliveira|2026-06-04": "folga", "Weslayne Karen Nunes|2026-06-01": "folga", "Weslayne Karen Nunes|2026-06-08": "folga", "Weslayne Karen Nunes|2026-06-15": "folga", "Weslayne Karen Nunes|2026-06-21": "folga", "Weslayne Karen Nunes|2026-06-24": "folga", "Weslayne Karen Nunes|2026-06-28": "folga", "Tainã Reis da Costa|2026-06-04": "folga", "Tainã Reis da Costa|2026-06-07": "folga", "Tainã Reis da Costa|2026-06-14": "folga", "Tainã Reis da Costa|2026-06-19": "folga", "Tainã Reis da Costa|2026-06-25": "folga", "Tainã Reis da Costa|2026-06-30": "folga", "Ana Barbara Bispo de Souza|2026-06-04": "folga", "Ana Barbara Bispo de Souza|2026-06-09": "folga", "Ana Barbara Bispo de Souza|2026-06-14": "folga", "Ana Barbara Bispo de Souza|2026-06-17": "folga", "Ana Barbara Bispo de Souza|2026-06-23": "folga", "Ana Barbara Bispo de Souza|2026-06-28": "folga", "Dayana Silva de Aguiar|2026-06-03": "folga", "Dayana Silva de Aguiar|2026-06-07": "folga", "Dayana Silva de Aguiar|2026-06-10": "folga", "Dayana Silva de Aguiar|2026-06-16": "folga", "Dayana Silva de Aguiar|2026-06-21": "folga", "Dayana Silva de Aguiar|2026-06-26": "folga", "Leticia Antunes da Silva|2026-06-01": "ferias", "Leticia Antunes da Silva|2026-06-02": "ferias", "Leticia Antunes da Silva|2026-06-03": "ferias", "Leticia Antunes da Silva|2026-06-04": "ferias", "Leticia Antunes da Silva|2026-06-05": "ferias", "Leticia Antunes da Silva|2026-06-06": "ferias", "Leticia Antunes da Silva|2026-06-07": "ferias", "Leticia Antunes da Silva|2026-06-08": "ferias", "Leticia Antunes da Silva|2026-06-09": "ferias", "Leticia Antunes da Silva|2026-06-15": "folga", "Leticia Antunes da Silva|2026-06-22": "folga", "Leticia Antunes da Silva|2026-06-28": "folga", "Jessika Cristine Millan dos Santos|2026-06-01": "folga", "Jessika Cristine Millan dos Santos|2026-06-08": "folga", "Jessika Cristine Millan dos Santos|2026-06-14": "folga", "Jessika Cristine Millan dos Santos|2026-06-21": "folga", "Jessika Cristine Millan dos Santos|2026-06-25": "folga", "Jessika Cristine Millan dos Santos|2026-06-30": "folga", "Mirella Macedo Di Renzo|2026-06-07": "folga", "Mirella Macedo Di Renzo|2026-06-10": "folga", "Mirella Macedo Di Renzo|2026-06-17": "folga", "Mirella Macedo Di Renzo|2026-06-20": "folga", "Mirella Macedo Di Renzo|2026-06-24": "folga", "Mirella Macedo Di Renzo|2026-06-28": "folga", "Aylla Barros dos Santos|2026-06-02": "folga", "Aylla Barros dos Santos|2026-06-09": "folga", "Aylla Barros dos Santos|2026-06-14": "folga", "Aylla Barros dos Santos|2026-06-16": "folga", "Aylla Barros dos Santos|2026-06-21": "folga", "Aylla Barros dos Santos|2026-06-26": "folga", "Fernanda de Souza Rocha|2026-06-07": "folga", "Fernanda de Souza Rocha|2026-06-14": "folga", "Fernanda de Souza Rocha|2026-06-21": "folga", "Fernanda de Souza Rocha|2026-06-28": "folga", "Fernanda de Souza Rocha|2026-06-04": "folga", "Fernanda de Souza Rocha|2026-06-06": "folga", "Fernanda de Souza Rocha|2026-06-20": "folga", "Maria Eduarda Lisboa Silva|2026-06-07": "folga", "Maria Eduarda Lisboa Silva|2026-06-14": "folga", "Maria Eduarda Lisboa Silva|2026-06-21": "folga", "Maria Eduarda Lisboa Silva|2026-06-28": "folga", "Maria Eduarda Lisboa Silva|2026-06-13": "folga", "Maria Eduarda Lisboa Silva|2026-06-27": "folga"};
+  const atual = JSON.parse(localStorage.getItem('escala_live')||'{}');
+  // Adiciona apenas se não existir (preserva o que usuário já lançou)
+  let alterado = false;
+  Object.entries(escalaPre).forEach(([k,v])=>{
+    if(!atual[k]){ atual[k]=v; alterado=true; }
+  });
+  if(alterado) localStorage.setItem('escala_live', JSON.stringify(atual));
+})();
+
+// ===================== GESTAO DE EQUIPE =====================
+
+function loadEquipe(){
+  try{
+    const base=[
+      {nome:'Andre Luiz dos Anjos',cargo:'Vendedor',loja:'Praiamar Shopping',admissao:'',ativa:true},
+      {nome:'Izabelle Cristhina Coelho Chaves',cargo:'Vendedora',loja:'Praiamar Shopping',admissao:'',ativa:true},
+      {nome:'Mariana Araujo de Oliveira',cargo:'Vendedora',loja:'Praiamar Shopping',admissao:'',ativa:true},
+      {nome:'Rafaela Carvalho Santos',cargo:'Auxiliar de Loja',loja:'Praiamar Shopping',admissao:'',ativa:true},
+      {nome:'Bianca Gomes Moreno',cargo:'Vendedora',loja:'Praiamar Shopping',admissao:'',ativa:true},
+      {nome:'Daniele Miguel Ferreira',cargo:'Vendedora',loja:'Praiamar Shopping',admissao:'',ativa:true},
+      {nome:'Leticia Antunes da Silva',cargo:'Vendedora',loja:'Miramar Shopping',admissao:'',ativa:true},
+      {nome:'Mirella Macedo Di Renzo',cargo:'Vendedora',loja:'Miramar Shopping',admissao:'',ativa:true},
+      {nome:'Jessika Cristine Millan dos Santos',cargo:'Vendedora',loja:'Miramar Shopping',admissao:'',ativa:true},
+      {nome:'Aylla Barros dos Santos',cargo:'Auxiliar',loja:'Miramar Shopping',admissao:'',ativa:true},
+      {nome:'Mariela Parente de Toledo Piza',cargo:'Vendedora',loja:'Azevedo Sodre',admissao:'',ativa:true},
+      {nome:'Raisa Vigolo Chaves',cargo:'Vendedora',loja:'Azevedo Sodre',admissao:'',ativa:true},
+      {nome:'Debora Cristina Olimpio de Oliveira',cargo:'Vendedora',loja:'Azevedo Sodre',admissao:'',ativa:true},
+      {nome:'Taina Reis da Costa',cargo:'Vendedora',loja:'Litoral Plaza',admissao:'',ativa:true},
+      {nome:'Weslayne Karen Nunes',cargo:'Vendedora',loja:'Litoral Plaza',admissao:'',ativa:true},
+      {nome:'Dayana Silva de Aguiar',cargo:'Vendedora',loja:'Litoral Plaza',admissao:'',ativa:true},
+      {nome:'Ana Barbara Bispo de Souza',cargo:'Vendedora',loja:'Litoral Plaza',admissao:'',ativa:true},
+      {nome:'Fernanda de Souza Rocha',cargo:'Vendedora',loja:'Bioritmo',admissao:'',ativa:true},
+      {nome:'Maria Eduarda Lisboa Silva',cargo:'Vendedora',loja:'Bioritmo',admissao:'',ativa:true},
+    ];
+    const saved=localStorage.getItem('equipe_live');
+    if(saved) return JSON.parse(saved);
+    localStorage.setItem('equipe_live',JSON.stringify(base));
+    return base;
+  }catch(e){return[];}
+}
+function saveEquipe(arr){localStorage.setItem('equipe_live',JSON.stringify(arr));}
+
+function getPessoasAtivas(lojaKey){
+  const equipe=loadEquipe();
+  const hoje=getHoje();
+  const mesAtual=hoje.substring(0,7);
+  return equipe.filter(p=>{
+    if(p.loja!==lojaKey) return false;
+    if(p.ativa) return true;
+    // Inativa: mostra ate fim do mes de saida
+    if(p.dataSaida){
+      const mesSaida=p.dataSaida.substring(0,7);
+      return mesSaida>=mesAtual;
+    }
+    return false;
+  });
+}
+
+let eqEditIdx=null;
+let desativarIdx=null;
+
+function abrirNovaVend(){
+  eqEditIdx=null;
+  document.getElementById('eq-modal-titulo').textContent='Nova colaboradora';
+  document.getElementById('eq-modal-sub').textContent='Preencha os dados da nova colaboradora.';
+  document.getElementById('eq-nome').value='';
+  document.getElementById('eq-cargo').value='Vendedora';
+  document.getElementById('eq-loja').value='Praiamar Shopping';
+  document.getElementById('eq-admissao').value=getHoje();
+  openModal('modal-equipe');
+}
+
+function abrirEditarVend(idx){
+  const equipe=loadEquipe();
+  const p=equipe[idx];
+  eqEditIdx=idx;
+  document.getElementById('eq-modal-titulo').textContent='Editar colaboradora';
+  document.getElementById('eq-modal-sub').textContent=p.nome;
+  document.getElementById('eq-nome').value=p.nome;
+  document.getElementById('eq-cargo').value=p.cargo;
+  document.getElementById('eq-loja').value=p.loja;
+  document.getElementById('eq-admissao').value=p.admissao||'';
+  openModal('modal-equipe');
+}
+
+function salvarEquipe(){
+  const nome=document.getElementById('eq-nome').value.trim();
+  if(!nome){alert('Informe o nome.');return;}
+  const cargo=document.getElementById('eq-cargo').value;
+  const loja=document.getElementById('eq-loja').value;
+  const admissao=document.getElementById('eq-admissao').value;
+  const equipe=loadEquipe();
+  if(eqEditIdx!==null){
+    equipe[eqEditIdx]={...equipe[eqEditIdx],nome,cargo,loja,admissao};
+  } else {
+    equipe.push({nome,cargo,loja,admissao,ativa:true});
+  }
+  saveEquipe(equipe);
+  closeModal('modal-equipe');
+  renderEquipe();
+}
+
+function abrirDesativar(idx){
+  desativarIdx=idx;
+  const equipe=loadEquipe();
+  const p=equipe[idx];
+  document.getElementById('desativar-sub').textContent=p.nome+' — '+p.loja;
+  document.getElementById('desativar-data').value=getHoje();
+  document.getElementById('desativar-obs').value='';
+  openModal('modal-desativar');
+}
+
+function confirmarDesativar(){
+  const motivo=document.getElementById('desativar-motivo').value;
+  const dataSaida=document.getElementById('desativar-data').value;
+  const obs=document.getElementById('desativar-obs').value.trim();
+  if(!dataSaida){alert('Informe a data de saida.');return;}
+  const equipe=loadEquipe();
+  equipe[desativarIdx]={...equipe[desativarIdx],ativa:false,motivo,dataSaida,obsDesligamento:obs};
+  saveEquipe(equipe);
+  closeModal('modal-desativar');
+  renderEquipe();
+}
+
+function reativarVend(idx){
+  if(!confirm('Reativar esta colaboradora?')) return;
+  const equipe=loadEquipe();
+  equipe[idx]={...equipe[idx],ativa:true,motivo:null,dataSaida:null,obsDesligamento:null};
+  saveEquipe(equipe);
+  renderEquipe();
+}
+
+const MOTIVO_LABEL={'demissao':'Demissao s/ justa causa','demissao-justa':'Demissao c/ justa causa','pedido':'Pedido de demissao','acordo':'Acordo','fim-contrato':'Fim de contrato'};
+const LOJAS_NOMES=['Praiamar Shopping','Miramar Shopping','Azevedo Sodre','Litoral Plaza','Bioritmo'];
+
+function renderEquipe(){
+  const equipe=loadEquipe();
+  const cont=document.getElementById('equipe-container');
+  cont.innerHTML=LOJAS_NOMES.map(loja=>{
+    const pessoas=equipe.map((p,i)=>({...p,idx:i})).filter(p=>p.loja===loja);
+    const ativas=pessoas.filter(p=>p.ativa);
+    const inativas=pessoas.filter(p=>!p.ativa);
+    const rows=[...ativas,...inativas].map(p=>{
+      const statusHtml=p.ativa
+        ?'<span class="eq-ativa">Ativa</span>'
+        :`<span class="eq-inativa">Inativa — ${MOTIVO_LABEL[p.motivo]||p.motivo}</span>${p.dataSaida?`<div class="eq-data-saida">Saida: ${new Date(p.dataSaida+'T12:00').toLocaleDateString('pt-BR')}${p.obsDesligamento?' | '+p.obsDesligamento:''}</div>`:''}`;
+      const admHtml=p.admissao?`<div style="font-size:10px;color:#aaa">Admissao: ${new Date(p.admissao+'T12:00').toLocaleDateString('pt-BR')}</div>`:'';
+      const btns=p.ativa
+        ?`<div class="eq-actions">
+            <button class="eq-btn" onclick="abrirEditarVend(${p.idx})">✏️ Editar</button>
+            <button class="eq-btn eq-btn-danger" onclick="abrirDesativar(${p.idx})">🚫 Desativar</button>
+          </div>`
+        :`<div class="eq-actions">
+            <button class="eq-btn eq-btn-success" onclick="reativarVend(${p.idx})">✅ Reativar</button>
+          </div>`;
+      return`<div class="equipe-row${p.ativa?'':' eq-inativa-row'}">
+        <div class="equipe-info">
+          <div class="eq-nome">${p.nome}${p.ativa?'':'<span class="eq-demit-badge">Inativa</span>'}</div>
+          <div class="eq-cargo">${p.cargo}</div>
+          <div class="eq-status">${statusHtml}</div>
+          ${admHtml}
+        </div>
+        ${btns}
+      </div>`;
+    }).join('');
+    const totalAtivas=ativas.length;
+    return`<div class="equipe-loja-sec">
+      <div class="equipe-loja-hdr">
+        <span class="equipe-loja-titulo">${loja}</span>
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="font-size:11px;opacity:.7">${totalAtivas} ativas</span>
+          <button class="equipe-add-btn" onclick="abrirNovaVend();document.getElementById('eq-loja').value='${loja}'">+ Adicionar</button>
+        </div>
+      </div>
+      ${rows||'<div style="padding:14px;text-align:center;font-size:12px;color:#aaa">Nenhuma colaboradora cadastrada</div>'}
+    </div>`;
+  }).join('');
+}
+// ===================== FIM GESTAO DE EQUIPE =====================
+
+</script>
+</body>
+</html>
