@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>LIVE! — Inicializar Firebase</title>
+<style>
+body{font-family:-apple-system,sans-serif;background:#1a1a1a;color:#f0c000;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0}
+.box{background:#222;border-radius:12px;padding:30px;width:460px;text-align:center}
+.logo{font-size:28px;font-weight:700;letter-spacing:3px;margin-bottom:6px}
+.sub{font-size:12px;color:#aaa;margin-bottom:24px}
+.btn{width:100%;padding:14px;background:#f0c000;color:#1a1a1a;border:none;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;margin-bottom:12px}
+.btn:disabled{opacity:.5;cursor:default}
+.log{background:#111;border-radius:8px;padding:14px;text-align:left;max-height:300px;overflow-y:auto;font-size:11px;color:#aaa;margin-top:16px}
+.ok{color:#3a9c5f}.err{color:#b83232}.info{color:#f0c000}
+.progress{background:#333;border-radius:4px;height:8px;margin:12px 0;overflow:hidden}
+.progress-bar{background:#f0c000;height:100%;width:0;transition:width .3s}
+</style>
+</head>
+<body>
+<div class="box">
+  <div class="logo">LIVE!</div>
+  <div class="sub">Inicializar dados no Firebase</div>
+  <button class="btn" id="btn-init" onclick="iniciar()">🚀 Carregar folgas e pontos retroativos</button>
+  <div class="progress"><div class="progress-bar" id="progress-bar"></div></div>
+  <div id="status" style="font-size:12px;color:#aaa;margin-bottom:8px"></div>
+  <div class="log" id="log"></div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, set, get } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyB9LxMVbD6opFjrp5Q1icRmVeOg2M_8aJM",
+  authDomain: "live-ponto.firebaseapp.com",
+  databaseURL: "https://live-ponto-default-rtdb.firebaseio.com",
+  projectId: "live-ponto",
+  storageBucket: "live-ponto.appspot.com",
+  messagingSenderId: "396456789012",
+  appId: "1:396456789012:web:live-ponto"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+function log(msg, tipo='info'){
+  const el = document.getElementById('log');
+  el.innerHTML += `<div class="${tipo}">${msg}</div>`;
+  el.scrollTop = el.scrollHeight;
+}
+
+function setProgress(pct){
+  document.getElementById('progress-bar').style.width = pct+'%';
+  document.getElementById('status').textContent = pct+'% concluído';
+}
+
+function vendFB(v){return v.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,'_').replace(/[^a-zA-Z0-9_]/g,'');}
+function fbDate(d){return d.replace(/-/g,'_');}
+
+// ===================== DADOS =====================
+
+const FOLGAS = {
+  'André Luiz dos Anjos':                ['2026-06-03','2026-06-07','2026-06-12','2026-06-16','2026-06-22','2026-06-28'],
+  'Izabelle Cristhina Coelho Chaves':    ['2026-06-04','2026-06-09','2026-06-14','2026-06-19','2026-06-25','2026-06-30'],
+  'Daniele Miguel Ferreira':             ['2026-06-04','2026-06-10','2026-06-15','2026-06-21','2026-06-24','2026-06-29'],
+  'Mariana Araujo de Oliveira':          ['2026-06-01','2026-06-08','2026-06-14','2026-06-19','2026-06-25','2026-06-28'],
+  'Bianca Gomes Moreno':                 ['2026-06-05','2026-06-07','2026-06-11','2026-06-17','2026-06-21','2026-06-26'],
+  'Rafaela Carvalho Santos':             ['2026-06-05','2026-06-11','2026-06-14','2026-06-18','2026-06-24','2026-06-28'],
+  'Leticia Antunes da Silva':            ['2026-06-15','2026-06-22','2026-06-28'],
+  'Mirella Macedo Di Renzo':             ['2026-06-07','2026-06-10','2026-06-17','2026-06-20','2026-06-24','2026-06-28'],
+  'Jessika Cristine Millan dos Santos':  ['2026-06-01','2026-06-08','2026-06-14','2026-06-21','2026-06-25','2026-06-30'],
+  'Aylla Barros dos Santos':             ['2026-06-02','2026-06-09','2026-06-14','2026-06-16','2026-06-21','2026-06-26'],
+  'Mariela Parente de Toledo Piza':      [],
+  'Raisa Vigolo Chaves':                 ['2026-06-04'],
+  'Debora Cristina Olimpio de Oliveira': ['2026-06-04'],
+  'Tainã Reis da Costa':                 ['2026-06-04','2026-06-07','2026-06-14','2026-06-19','2026-06-25','2026-06-30'],
+  'Weslayne Karen Nunes':                ['2026-06-01','2026-06-08','2026-06-15','2026-06-21','2026-06-24','2026-06-28'],
+  'Dayana Silva de Aguiar':              ['2026-06-03','2026-06-07','2026-06-10','2026-06-16','2026-06-21','2026-06-26'],
+  'Ana Barbara Bispo de Souza':          ['2026-06-04','2026-06-09','2026-06-14','2026-06-17','2026-06-23','2026-06-28'],
+  'Fernanda de Souza Rocha':             ['2026-06-04','2026-06-06','2026-06-07','2026-06-14','2026-06-20','2026-06-21','2026-06-28'],
+  'Maria Eduarda Lisboa Silva':          ['2026-06-07','2026-06-13','2026-06-14','2026-06-21','2026-06-27','2026-06-28'],
+};
+
+const FERIAS_ATE9 = ['Leticia Antunes da Silva','Mariela Parente de Toledo Piza'];
+const DOMINGOS_JUN = ['2026-06-07','2026-06-14','2026-06-21','2026-06-28'];
+const FECHA_DOM_FB = ['Azevedo_Sodre','Bioritmo'];
+
+// Domingos de Azevedo e Bioritmo = folga
+const VEND_FECHA_DOM = [
+  'Mariela Parente de Toledo Piza','Raisa Vigolo Chaves','Debora Cristina Olimpio de Oliveira',
+  'Fernanda de Souza Rocha','Maria Eduarda Lisboa Silva'
+];
+
+const TURNOS_CONFIG = {
+  'André Luiz dos Anjos':                {turno:'tarde', loja:'Praiamar_Shopping'},
+  'Izabelle Cristhina Coelho Chaves':    {turno:'manha', loja:'Praiamar_Shopping'},
+  'Daniele Miguel Ferreira':             {turno:'manha', loja:'Praiamar_Shopping'},
+  'Mariana Araujo de Oliveira':          {turno:'intermediario', loja:'Praiamar_Shopping'},
+  'Bianca Gomes Moreno':                 {turno:'tarde', loja:'Praiamar_Shopping'},
+  'Rafaela Carvalho Santos':             {turno:'tarde', loja:'Praiamar_Shopping'},
+  'Leticia Antunes da Silva':            {turno:'manha', loja:'Miramar_Shopping'},
+  'Mirella Macedo Di Renzo':             {turno:'manha', loja:'Miramar_Shopping'},
+  'Jessika Cristine Millan dos Santos':  {turno:'tarde', loja:'Miramar_Shopping'},
+  'Aylla Barros dos Santos':             {turno:'tarde', loja:'Miramar_Shopping'},
+  'Mariela Parente de Toledo Piza':      {turno:'manha', loja:'Azevedo_Sodre'},
+  'Raisa Vigolo Chaves':                 {turno:'tarde', loja:'Azevedo_Sodre'},
+  'Debora Cristina Olimpio de Oliveira': {turno:'manha', loja:'Azevedo_Sodre'},
+  'Tainã Reis da Costa':                 {turno:'manha', loja:'Litoral_Plaza'},
+  'Weslayne Karen Nunes':                {turno:'manha', loja:'Litoral_Plaza'},
+  'Dayana Silva de Aguiar':              {turno:'manha', loja:'Litoral_Plaza'},
+  'Ana Barbara Bispo de Souza':          {turno:'manha', loja:'Litoral_Plaza'},
+  'Fernanda de Souza Rocha':             {turno:'tarde', loja:'Bioritmo'},
+  'Maria Eduarda Lisboa Silva':          {turno:'manha', loja:'Bioritmo'},
+};
+
+function getHorarios(turno, lojaFB, isDom) {
+  if(isDom) return {entrada:'14:30',saida_almoco:'17:30',retorno_almoco:'18:00',saida:'21:00'};
+  if(lojaFB==='Azevedo_Sodre'){
+    if(turno==='manha') return {entrada:'08:30',saida_almoco:'12:30',retorno_almoco:'13:30',saida:'16:50'};
+    if(turno==='intermediario') return {entrada:'10:30',saida_almoco:'13:30',retorno_almoco:'14:30',saida:'18:50'};
+    return {entrada:'12:00',saida_almoco:'15:00',retorno_almoco:'16:00',saida:'20:00'};
+  }
+  if(lojaFB==='Bioritmo'){
+    if(turno==='manha') return {entrada:'07:00',saida_almoco:'11:00',retorno_almoco:'12:00',saida:'15:00'};
+    return {entrada:'13:00',saida_almoco:'16:00',retorno_almoco:'17:00',saida:'21:00'};
+  }
+  if(turno==='manha') return {entrada:'09:40',saida_almoco:'12:40',retorno_almoco:'13:40',saida:'18:00'};
+  if(turno==='intermediario') return {entrada:'11:40',saida_almoco:'14:40',retorno_almoco:'15:40',saida:'20:00'};
+  return {entrada:'13:50',saida_almoco:'16:50',retorno_almoco:'17:50',saida:'22:10'};
+}
+
+function getDiaSemana(data) {
+  return new Date(data+'T12:00').getDay();
+}
+
+// ===================== INICIALIZAR =====================
+
+window.iniciar = async function() {
+  document.getElementById('btn-init').disabled = true;
+  document.getElementById('log').innerHTML = '';
+  log('Iniciando carregamento...', 'info');
+
+  let total = 0, feito = 0;
+
+  // 1. ESCALA - folgas e férias
+  log('--- Carregando escala de junho ---', 'info');
+  const escalaData = {};
+
+  for(const [vend, folgas] of Object.entries(FOLGAS)) {
+    for(const data of folgas) {
+      const key = vendFB(vend)+'_'+fbDate(data);
+      escalaData[key] = 'folga';
+    }
+  }
+  // Domingos lojas fechadas
+  for(const vend of VEND_FECHA_DOM) {
+    for(const d of DOMINGOS_JUN) {
+      const key = vendFB(vend)+'_'+fbDate(d);
+      escalaData[key] = 'folga';
+    }
+  }
+  // Férias até dia 09
+  for(const vend of FERIAS_ATE9) {
+    for(let d=1;d<=9;d++) {
+      const data = `2026-06-${String(d).padStart(2,'0')}`;
+      const key = vendFB(vend)+'_'+fbDate(data);
+      escalaData[key] = 'ferias';
+    }
+  }
+
+  await set(ref(db,'escala'), escalaData);
+  log(`✓ Escala carregada: ${Object.keys(escalaData).length} entradas`, 'ok');
+  setProgress(20);
+
+  // 2. PONTO RETROATIVO 01-11
+  log('--- Carregando ponto retroativo 01-11/06 ---', 'info');
+
+  const todosVend = Object.keys(TURNOS_CONFIG);
+  total = todosVend.length * 11;
+
+  for(const vend of todosVend) {
+    const {turno, loja} = TURNOS_CONFIG[vend];
+    const folgas = [
+      ...(FOLGAS[vend]||[]),
+      ...(VEND_FECHA_DOM.includes(vend) ? DOMINGOS_JUN : []),
+      ...(FERIAS_ATE9.includes(vend) ? Array.from({length:9},(_,i)=>`2026-06-${String(i+1).padStart(2,'0')}`) : [])
+    ];
+
+    for(let d=1;d<=11;d++) {
+      const data = `2026-06-${String(d).padStart(2,'0')}`;
+      feito++;
+      const pct = 20 + Math.round((feito/total)*75);
+      setProgress(pct);
+
+      // Pular folga/férias
+      if(folgas.includes(data)) continue;
+
+      // Pular domingo lojas fechadas
+      const diaSem = getDiaSemana(data);
+      if(FECHA_DOM_FB.includes(loja) && diaSem===0) continue;
+
+      const isDom = diaSem===0;
+      const h = getHorarios(turno, loja, isDom);
+      const dk = fbDate(data);
+      const vk = vendFB(vend);
+      const lojaKey = loja.replace(/_/g,' ').replace('Sodre','Sodré');
+
+      const basePath = `ponto/${loja}/${dk}/${vk}`;
+      // Só insere se não existir
+      const snap = await get(ref(db, basePath+'/entrada'));
+      if(!snap.exists()) {
+        await set(ref(db, basePath), {
+          entrada: {loja:lojaKey,vend,tipo:'entrada',hora:h.entrada,data,editado:true,obs:'Retroativo'},
+          saida_almoco: {loja:lojaKey,vend,tipo:'saida_almoco',hora:h.saida_almoco,data,editado:true,obs:'Retroativo'},
+          retorno_almoco: {loja:lojaKey,vend,tipo:'retorno_almoco',hora:h.retorno_almoco,data,editado:true,obs:'Retroativo'},
+          saida: {loja:lojaKey,vend,tipo:'saida',hora:h.saida,data,editado:true,obs:'Retroativo'},
+        });
+      }
+    }
+    log(`✓ ${vend.split(' ')[0]} (${loja.split('_')[0]})`, 'ok');
+  }
+
+  setProgress(100);
+  log('', 'info');
+  log('✅ TUDO CARREGADO COM SUCESSO!', 'ok');
+  log('Pode fechar esta página e usar o sistema normalmente.', 'info');
+  document.getElementById('btn-init').textContent = '✅ Concluído!';
+}
+</script>
+</body>
+</html>
