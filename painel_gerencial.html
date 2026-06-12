@@ -57,7 +57,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .vend-badges{display:flex;gap:3px;flex-wrap:wrap;align-items:center}
 .badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:500}
 .b-e{background:#d4edda;color:#1a5c2e}.b-a{background:#fff3cd;color:#7a5500}.b-r{background:#d1ecf1;color:#0c5460}.b-s{background:#f8d7da;color:#7a2025}.b-p{background:#f0f0f0;color:#bbb}
-.b-folga{background:#e8f5e9;color:#2e7d32}.b-atestado{background:#e3f2fd;color:#1565c0}
+.b-folga{background:#e8f5e9;color:#2e7d32}.b-feriado{background:#fff3e0;color:#e65c00}.ec-feriado{background:#fff3e0;color:#e65c00;font-size:10px;border-radius:3px;padding:1px 3px}.b-atestado{background:#e3f2fd;color:#1565c0}
 .b-falta-j{background:#fff3e0;color:#e65c00}.b-falta-i{background:#fdecea;color:#b83232}
 .b-ferias{background:#f3e5f5;color:#6a1b9a}.b-licenca{background:#fce4ec;color:#880e4f}.b-outro{background:#f5f5f5;color:#555}
 .badge-edit{background:#e8eaf6;color:#3949ab;font-size:9px}
@@ -222,6 +222,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <div class="cel-opts">
       <button class="cel-opt" onclick="salvarCel('trab')"><span>💼</span>Trabalhou</button>
       <button class="cel-opt" onclick="salvarCel('folga')"><span>🌴</span>Folga</button>
+      <button class="cel-opt" onclick="salvarCel('feriado')"><span>🎉</span>Feriado</button>
       <button class="cel-opt" onclick="salvarCel('atestado')"><span>🏥</span>Atestado</button>
       <button class="cel-opt" onclick="salvarCel('falta-j')"><span>⚠️</span>Falta just.</button>
       <button class="cel-opt" onclick="salvarCel('falta-i')"><span>❌</span>Falta injust.</button>
@@ -352,6 +353,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <div class="legend-item"><div class="legend-dot" style="background:#fff3e0"></div>Falta just.</div>
       <div class="legend-item"><div class="legend-dot" style="background:#fdecea"></div>Falta injust.</div>
       <div class="legend-item"><div class="legend-dot" style="background:#f3e5f5"></div>Férias</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#fff3e0"></div>Feriado</div>
       <div class="legend-item"><div class="legend-dot" style="background:#fff9e0;border:1px solid #f0c000"></div>Hoje</div>
     </div>
     <div id="escala-container"></div>
@@ -451,7 +453,7 @@ const LOJAS_CFG = [
 ];
 const TURNOS=['entrada','saida_almoco','retorno_almoco','saida'];
 const TINFO={entrada:{l:'Entrada',b:'b-e'},saida_almoco:{l:'Saída Almoço',b:'b-a'},retorno_almoco:{l:'Retorno Almoço',b:'b-r'},saida:{l:'Saída',b:'b-s'}};
-const OCORR_INFO={folga:{l:'Folga',b:'b-folga',ec:'ec-folga'},'atestado':{l:'Atestado',b:'b-atestado',ec:'ec-atestado'},'falta-j':{l:'Falta Just.',b:'b-falta-j',ec:'ec-falta-j'},'falta-i':{l:'Falta Injust.',b:'b-falta-i',ec:'ec-falta-i'},ferias:{l:'Férias',b:'b-ferias',ec:'ec-ferias'},licenca:{l:'Licença',b:'b-licenca',ec:'ec-licenca'},outro:{l:'Outro',b:'b-outro',ec:'ec-trab'}};
+const OCORR_INFO={folga:{l:'Folga',b:'b-folga',ec:'ec-folga'},feriado:{l:'Feriado',b:'b-feriado',ec:'ec-feriado'},'atestado':{l:'Atestado',b:'b-atestado',ec:'ec-atestado'},'falta-j':{l:'Falta Just.',b:'b-falta-j',ec:'ec-falta-j'},'falta-i':{l:'Falta Injust.',b:'b-falta-i',ec:'ec-falta-i'},ferias:{l:'Férias',b:'b-ferias',ec:'ec-ferias'},licenca:{l:'Licença',b:'b-licenca',ec:'ec-licenca'},outro:{l:'Outro',b:'b-outro',ec:'ec-trab'}};
 
 // STATE
 let filtro='Todas', filtroBanco='Todas';
@@ -530,25 +532,28 @@ function renderFeriadoBar(){
 }
 
 // TURNO
-function detectarTurno(horaEntrada,lojaFB,diaSemana,feriado){
+function detectarTurno(horaEntrada,lojaFB,diaSemana,feriado,feriadoEscala){
   const mins=toMins(horaEntrada);
+  // Feriado na escala individual tem prioridade sobre feriado geral
+  const isFer = feriadoEscala || feriado;
   if(lojaFB==='Bioritmo'){
-    if(diaSemana===6||feriado) return{entrada:'08:00',saida:'13:00',almoco:0,label:'Sáb/Feriado',hPrev:5*60};
+    if(diaSemana===6||isFer) return{entrada:'08:00',saida:'13:00',almoco:0,label:'Sáb/Feriado',hPrev:5*60};
     if(mins<10*60) return{entrada:'07:00',saida:'15:00',almoco:60,label:'Manhã',hPrev:7*60};
     return{entrada:'13:00',saida:'21:00',almoco:60,label:'Tarde',hPrev:7*60};
   }
   if(lojaFB==='Azevedo_Sodre'){
+    // Azevedo não abre em feriado — tratado como folga no calcBancoMes
     if(mins<9*60+30) return{entrada:'08:30',saida:'16:50',almoco:60,label:'Manhã',hPrev:7*60+20};
     if(mins<11*60+30) return{entrada:'10:30',saida:'18:50',almoco:60,label:'Intermediário',hPrev:7*60+20};
     return{entrada:'12:00',saida:'20:00',almoco:60,label:'Tarde',hPrev:7*60+20};
   }
-  if(diaSemana===0||feriado) return{entrada:'14:30',saida:'21:00',almoco:30,label:'Dom/Feriado',hPrev:6*60};
+  if(diaSemana===0||isFer) return{entrada:'14:30',saida:'21:00',almoco:30,label:'Dom/Feriado',hPrev:6*60};
   if(mins<11*60) return{entrada:'09:40',saida:'18:00',almoco:60,label:'Manhã',hPrev:7*60+20};
   if(mins<13*60) return{entrada:'11:40',saida:'20:00',almoco:60,label:'Intermediário',hPrev:7*60+20};
   return{entrada:'13:50',saida:'22:10',almoco:60,label:'Tarde',hPrev:7*60+20};
 }
 
-function calcHoras(regs,lojaFB,data){
+function calcHoras(regs,lojaFB,data,vend){
   if(!regs) return null;
   const arr=Array.isArray(regs)?regs:Object.values(regs);
   const ocorr=arr.find(r=>r.ocorrencia);
@@ -558,7 +563,8 @@ function calcHoras(regs,lojaFB,data){
   if(!e||!s) return null;
   const dia=getDiaSemana(data);
   const feriado=isFeriado(data);
-  const ti=detectarTurno(e.hora,lojaFB,dia,feriado);
+  const feriadoEscala=vend?getEscalaDia(vend,data)==='feriado':false;
+  const ti=detectarTurno(e.hora,lojaFB,dia,feriado,feriadoEscala);
   const eR=toMins(e.hora),sR=toMins(s.hora);
   const sA=toMins(arr.find(r=>r.tipo==='saida_almoco')?.hora);
   const rA=toMins(arr.find(r=>r.tipo==='retorno_almoco')?.hora);
@@ -643,7 +649,7 @@ function renderHoje(){
       if(ocorr){const oi=OCORR_INFO[ocorr.ocorrencia]||{l:ocorr.ocorrencia,b:'b-outro'};badgesHtml=`<span class="badge ${oi.b}">${oi.l}</span>`;}
       else{
         badgesHtml=TURNOS.map(t=>{const r=regs.find(x=>x.tipo===t);return r?`<span class="badge ${TINFO[t].b}">${TINFO[t].l} ${r.hora}${r.editado?'*':''}</span>`:`<span class="badge b-p">${TINFO[t].l}</span>`;}).join('');
-        const h=calcHoras(regs,loja.fb);
+        const h=calcHoras(regs,loja.fb,getHoje(),p.nome);
         if(h){const cls=h.extra>0?'extra-pos':h.extra<0?'extra-neg':'';badgesHtml+=` <span class="${cls}">${h.extraStr}</span>`;}
       }
       const temEdit=regs.some(r=>r.editado);
@@ -754,7 +760,7 @@ function renderEscala(){
         const isHoje=data===hoje;
         const escala=getEscalaDia(p.nome,data);
         let conteudo='';
-        if(escala&&OCORR_INFO[escala]) conteudo=`<span class="${OCORR_INFO[escala].ec}">${escala==='falta-j'?'FJ':escala==='falta-i'?'FI':escala==='atestado'?'AT':escala==='ferias'?'FÉR':escala==='licenca'?'LIC':escala==='folga'?'FL':''}</span>`;
+        if(escala&&OCORR_INFO[escala]) conteudo=`<span class="${OCORR_INFO[escala].ec}">${escala==='falta-j'?'FJ':escala==='falta-i'?'FI':escala==='atestado'?'AT':escala==='ferias'?'FÉR':escala==='licenca'?'LIC':escala==='folga'?'FL':escala==='feriado'?'FER':escala==='atestado'?'AT':escala==='ferias'?'FÉR':escala==='licenca'?'LIC':escala==='falta-j'?'FJ':escala==='falta-i'?'FI':''}</span>`;
         else if(fechaDom) conteudo='<span style="color:#eee">—</span>';
         else conteudo='<span class="ec-trab">—</span>';
         tds+=`<td style="${isHoje?'background:#fff9e0;':''}" onclick="abrirCel('${p.nome}','${data}','${loja.fb}')">${conteudo}</td>`;
@@ -783,10 +789,15 @@ async function calcBancoMes(vend,lojaFB,ano,mes){
     if(escala==='falta-i'){faltasI++;totalPrev+=7*60+20;continue;}
     if(escala==='ferias'){ferias++;continue;}
     if(escala==='licenca'){licencas++;continue;}
+    // Feriado na escala individual
+    if(escala==='feriado'){
+      if(lojaFB==='Azevedo_Sodre'){folgas++;continue;} // Azevedo não abre
+      // Bioritmo e shoppings: conta como dia trabalhado com horário especial
+    }
     if(fechaDom) continue;
     if(ds===0&&!escala) continue;
     const regs=getVendRegs(lojaFB,vend,data);
-    const h=calcHoras(regs,lojaFB,data);
+    const h=calcHoras(regs,lojaFB,data,vend);
     if(h){totalTrab+=h.trabalhado;totalPrev+=h.previsto;diasTrab++;}
   }
   const banco=totalTrab-totalPrev;
@@ -983,7 +994,7 @@ function abrirDetalhe(tipo){
   else if(tipo==='completos'){
     titulo='✅ Turno completo';
     itens=todos.filter(p=>['entrada','saida_almoco','retorno_almoco','saida'].every(t=>p.regs.find(r=>r.tipo===t))).map(p=>{
-      const h=calcHoras(p.regs,p.lojaFB);
+      const h=calcHoras(p.regs,p.lojaFB,getHoje(),p.nome);
       return{nome:p.nome, info:h?`${h.trabalhadoStr} trabalhadas · ${h.extraStr}`:'—', loja:p.loja};
     });
   }
@@ -1034,7 +1045,7 @@ function exportarExcelDia(){
         const sa=regs.find(r=>r.tipo==='saida_almoco');
         const ra=regs.find(r=>r.tipo==='retorno_almoco');
         const s=regs.find(r=>r.tipo==='saida');
-        const h=calcHoras(regs,loja.fb);
+        const h=calcHoras(regs,loja.fb,getHoje(),p.nome);
         rows.push([p.nome,p.cargo,'Normal',e?e.hora:'—',sa?sa.hora:'—',ra?ra.hora:'—',s?s.hora:'—',h?h.trabalhadoStr:'—',h?h.prevStr:'—',h?h.extraStr:'—',h?h.turnoLabel:'—',regs.some(r=>r.editado)?'Sim':'Não']);
       }
     });
