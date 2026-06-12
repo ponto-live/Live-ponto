@@ -135,6 +135,15 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .eq-btn-success{border-color:#d4edda;color:#1a7a3c}
 .eq-demit-badge{display:inline-block;padding:2px 7px;border-radius:10px;font-size:10px;background:#fdecea;color:#b83232;margin-left:6px}
 .conn-status{font-size:11px;padding:3px 10px;border-radius:10px;margin-left:10px}
+.stat{cursor:pointer;transition:all .15s}
+.stat:hover{background:#f0f0f0;transform:translateY(-1px)}
+.detalhe-modal{background:#fff;border-radius:12px;padding:20px;width:380px;max-width:100%;max-height:80vh;overflow-y:auto}
+.detalhe-titulo{font-size:15px;font-weight:600;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.detalhe-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #f5f5f5;font-size:13px}
+.detalhe-nome{font-weight:500;color:#1a1a1a}
+.detalhe-info{font-size:11px;color:#888}
+.detalhe-loja{font-size:10px;color:#aaa;display:block;margin-top:1px}
+.detalhe-vazio{text-align:center;padding:20px;font-size:12px;color:#aaa}
 .conn-ok{background:#d4edda;color:#1a5c2e}
 .conn-err{background:#fdecea;color:#b83232}
 </style>
@@ -272,6 +281,15 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <button class="btn-cancel" onclick="closeModal('modal-desativar')">Cancelar</button>
       <button class="btn-save" style="background:#b83232" onclick="confirmarDesativarFB()">🚫 Desativar</button>
     </div>
+  </div>
+</div>
+
+<!-- MODAL DETALHE STAT -->
+<div class="modal-overlay" id="modal-detalhe">
+  <div class="detalhe-modal">
+    <div class="detalhe-titulo" id="detalhe-titulo"></div>
+    <div id="detalhe-lista"></div>
+    <button class="btn-cancel" style="width:100%;margin-top:14px" onclick="closeModal('modal-detalhe')">Fechar</button>
   </div>
 </div>
 
@@ -577,12 +595,15 @@ function renderHoje(){
   const emAlm=todos.filter(p=>p.regs.find(r=>r.tipo==='saida_almoco')&&!p.regs.find(r=>r.tipo==='retorno_almoco')).length;
   const completos=todos.filter(p=>TURNOS.every(t=>p.regs.find(r=>r.tipo===t))).length;
   const ocorrs=todos.filter(p=>p.regs.find(r=>r.ocorrencia)).length;
+  // Montar listas para o modal de detalhe
+  window._statTodos = todos;
+
   document.getElementById('stats').innerHTML=`
-    <div class="stat"><div class="stat-val">${comReg}</div><div class="stat-lbl">Registraram</div></div>
-    <div class="stat"><div class="stat-val">${naLoja}</div><div class="stat-lbl">Na loja</div></div>
-    <div class="stat"><div class="stat-val">${emAlm}</div><div class="stat-lbl">Em almoço</div></div>
-    <div class="stat"><div class="stat-val">${completos}</div><div class="stat-lbl">Completos</div></div>
-    <div class="stat"><div class="stat-val">${ocorrs}</div><div class="stat-lbl">Ocorrências</div></div>`;
+    <div class="stat" onclick="abrirDetalhe('registraram')"><div class="stat-val">${comReg}</div><div class="stat-lbl">Registraram</div></div>
+    <div class="stat" onclick="abrirDetalhe('naloja')"><div class="stat-val">${naLoja}</div><div class="stat-lbl">Na loja</div></div>
+    <div class="stat" onclick="abrirDetalhe('almoco')"><div class="stat-val">${emAlm}</div><div class="stat-lbl">Em almoço</div></div>
+    <div class="stat" onclick="abrirDetalhe('completos')"><div class="stat-val">${completos}</div><div class="stat-lbl">Completos</div></div>
+    <div class="stat" onclick="abrirDetalhe('ocorrencias')"><div class="stat-val">${ocorrs}</div><div class="stat-lbl">Ocorrências</div></div>`;
   // Alertas
   const alertas=[];
   const agora=toMins(getNow());
@@ -930,6 +951,53 @@ function renderEquipe(){
     return`<div class="equipe-loja-sec"><div class="equipe-loja-hdr"><span class="equipe-loja-titulo">${loja}</span><div style="display:flex;align-items:center;gap:10px"><span style="font-size:11px;opacity:.7">${ativas.length} ativas</span><button class="equipe-add-btn" onclick="abrirNovaVend();document.getElementById('eq-loja').value='${loja}'">+ Add</button></div></div>${rows||'<div style="padding:14px;text-align:center;font-size:12px;color:#aaa">Nenhuma cadastrada</div>'}</div>`;
   }).join('');
 }
+
+// DETALHE STATS
+function abrirDetalhe(tipo){
+  const todos = window._statTodos || [];
+  let titulo='', itens=[];
+
+  if(tipo==='registraram'){
+    titulo='📋 Registraram hoje';
+    itens=todos.filter(p=>p.regs.length>0).map(p=>({
+      nome:p.nome, info:'Entrou: '+(p.regs.find(r=>r.tipo==='entrada')?.hora||'—'), loja:p.loja
+    }));
+  }
+  else if(tipo==='naloja'){
+    titulo='🏪 Na loja agora';
+    itens=todos.filter(p=>p.regs.find(r=>r.tipo==='entrada')&&!p.regs.find(r=>r.tipo==='saida')&&!p.regs.find(r=>r.ocorrencia)).map(p=>({
+      nome:p.nome, info:'Entrada: '+(p.regs.find(r=>r.tipo==='entrada')?.hora||'—'), loja:p.loja
+    }));
+  }
+  else if(tipo==='almoco'){
+    titulo='🍽️ Em almoço agora';
+    itens=todos.filter(p=>p.regs.find(r=>r.tipo==='saida_almoco')&&!p.regs.find(r=>r.tipo==='retorno_almoco')).map(p=>({
+      nome:p.nome, info:'Saiu: '+(p.regs.find(r=>r.tipo==='saida_almoco')?.hora||'—'), loja:p.loja
+    }));
+  }
+  else if(tipo==='completos'){
+    titulo='✅ Turno completo';
+    itens=todos.filter(p=>['entrada','saida_almoco','retorno_almoco','saida'].every(t=>p.regs.find(r=>r.tipo===t))).map(p=>{
+      const h=calcHoras(p.regs,p.lojaFB);
+      return{nome:p.nome, info:h?`${h.trabalhadoStr} trabalhadas · ${h.extraStr}`:'—', loja:p.loja};
+    });
+  }
+  else if(tipo==='ocorrencias'){
+    titulo='📋 Ocorrências do dia';
+    const OCORR_LABELS={folga:'🌴 Folga','atestado':'🏥 Atestado','falta-j':'⚠️ Falta justif.','falta-i':'❌ Falta injustif.',ferias:'🏖️ Férias',licenca:'🤰 Licença',outro:'📋 Outro'};
+    itens=todos.filter(p=>p.regs.find(r=>r.ocorrencia)).map(p=>{
+      const ocorr=p.regs.find(r=>r.ocorrencia);
+      return{nome:p.nome, info:OCORR_LABELS[ocorr.ocorrencia]||ocorr.ocorrencia, loja:p.loja};
+    });
+  }
+
+  document.getElementById('detalhe-titulo').textContent=titulo;
+  document.getElementById('detalhe-lista').innerHTML=itens.length
+    ?itens.map(i=>`<div class="detalhe-row"><div><div class="detalhe-nome">${i.nome.split(' ').slice(0,2).join(' ')}</div><span class="detalhe-loja">${i.loja}</span></div><div class="detalhe-info">${i.info}</div></div>`).join('')
+    :'<div class="detalhe-vazio">Nenhuma pessoa nesta categoria.</div>';
+  openModal('modal-detalhe');
+}
+window.abrirDetalhe=abrirDetalhe;
 
 // NAV
 function setNavTab(aba,btn){
