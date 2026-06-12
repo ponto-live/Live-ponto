@@ -36,22 +36,21 @@ select{width:100%;padding:11px 12px;border:1px solid #ddd;border-radius:8px;back
 .ok-prox{margin-top:10px;font-size:12px;color:#555;background:#fff;border-radius:6px;padding:6px 12px;display:inline-block;border:1px solid #e8e8e8}
 .ok-turno{margin-top:8px;font-size:11px;color:#aaa}
 .badge{display:inline-block;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:500}
-.b-e{background:#d4edda;color:#1a5c2e}.b-a{background:#fff3cd;color:#7a5500}.b-r{background:#d1ecf1;color:#0c5460}.b-s{background:#f8d7da;color:#7a2025}.b-p{background:#f0f0f0;color:#aaa;font-size:10px}
+.b-e{background:#d4edda;color:#1a5c2e}.b-a{background:#fff3cd;color:#7a5500}.b-r{background:#d1ecf1;color:#0c5460}.b-s{background:#f8d7da;color:#7a2025}.b-p{background:#f0f0f0;color:#aaa}
 .hist-card{border:1px solid #ececec;border-radius:8px;padding:10px 12px;margin-bottom:8px}
 .hist-nome{font-size:13px;font-weight:600;color:#1a1a1a}
-.hist-turno{font-size:11px;color:#aaa;margin-bottom:6px}
-.hist-badges{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:5px}
-.hist-horas{font-size:11px;color:#888;padding-top:5px;border-top:1px solid #f5f5f5}
-.extra-pos{color:#1a7a3c;font-weight:500}
-.extra-neg{color:#b83232;font-weight:500}
+.hist-badges{display:flex;gap:4px;flex-wrap:wrap;margin-top:5px}
+.hist-horas{font-size:11px;color:#888;padding-top:5px;border-top:1px solid #f5f5f5;margin-top:5px}
 .empty{text-align:center;padding:30px;color:#aaa;font-size:13px}
 .nav-row{display:flex;gap:8px}
 .nav-row .btn-sm{flex:1;padding:9px;border-radius:8px;font-size:12px;cursor:pointer;border:1px solid #e0e0e0;background:transparent;color:#666;text-align:center}
-.dia-badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:500;margin-bottom:12px}
-.dia-normal{background:#f0f0f0;color:#555}
+.dia-badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:500;margin-bottom:12px;background:#f0f0f0;color:#555}
+.dia-feriado{background:#fff3e0;color:#e65c00}
 .dia-domingo{background:#fce4ec;color:#880e4f}
 .dia-sabado{background:#e8f5e9;color:#1b5e20}
-.dia-feriado{background:#fff3e0;color:#e65c00}
+.salvando{font-size:11px;color:#aaa;text-align:center;margin-top:8px;min-height:16px}
+.online-badge{font-size:10px;padding:2px 8px;border-radius:10px;background:#d4edda;color:#1a5c2e;margin-left:8px}
+.offline-badge{font-size:10px;padding:2px 8px;border-radius:10px;background:#fdecea;color:#b83232;margin-left:8px}
 </style>
 </head>
 <body>
@@ -59,10 +58,13 @@ select{width:100%;padding:11px 12px;border:1px solid #ddd;border-radius:8px;back
 
 <div id="s-form" class="screen active">
   <div class="hdr">
-    <div><div class="hdr-logo">LIVE!</div><div class="hdr-loja">Praiamar Shopping</div></div>
+    <div>
+      <div class="hdr-logo">LIVE! <span id="conn-badge" class="online-badge">●</span></div>
+      <div class="hdr-loja">Praiamar Shopping</div>
+    </div>
     <div class="hdr-right"><div class="hdr-hora" id="f-hora">--:--</div><div class="hdr-data" id="f-data"></div></div>
   </div>
-  <div class="feriado-bar" id="feriado-bar">🎉 <span id="feriado-nome-bar">Feriado</span> — horário especial ativo</div>
+  <div class="feriado-bar" id="feriado-bar">🎉 <span id="feriado-nome-bar">Feriado</span> — horário especial</div>
   <div class="bdy">
     <div id="dia-info"></div>
     <div class="lbl">Seu nome</div>
@@ -83,6 +85,7 @@ select{width:100%;padding:11px 12px;border:1px solid #ddd;border-radius:8px;back
       <button class="tb" id="tb-saida" onclick="selT('saida')"><span class="ti">🔴</span><span class="tl" id="tl-saida">Saída</span></button>
     </div>
     <button class="btn-reg" id="btn-reg" onclick="registrar()" disabled>Registrar Ponto</button>
+    <div class="salvando" id="salvando"></div>
     <div class="dvd"></div>
     <div class="nav-row"><button class="btn-sm" onclick="showScreen('s-hist')">📋 Ver registros do dia</button></div>
   </div>
@@ -91,7 +94,7 @@ select{width:100%;padding:11px 12px;border:1px solid #ddd;border-radius:8px;back
 <div id="s-ok" class="screen">
   <div class="hdr">
     <div><div class="hdr-logo">LIVE!</div><div class="hdr-loja">Praiamar Shopping</div></div>
-    <div class="hdr-right"><div class="hdr-hora" id="ok-hora-hdr">--:--</div></div>
+    <div class="hdr-right"><div class="hdr-hora">--:--</div></div>
   </div>
   <div class="bdy">
     <div class="ok-box">
@@ -111,16 +114,32 @@ select{width:100%;padding:11px 12px;border:1px solid #ddd;border-radius:8px;back
     <div class="hdr-right"><div class="hdr-hora" id="h-hora">--:--</div></div>
   </div>
   <div class="bdy">
-    <div id="hist-lista"></div>
+    <div id="hist-lista"><div class="empty">Carregando...</div></div>
     <div class="dvd"></div>
     <div class="nav-row"><button class="btn-sm" onclick="showScreen('s-form')">← Voltar</button></div>
   </div>
 </div>
 
 </div>
-<script>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, set, get, onValue, child } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyB9LxMVbD6opFjrp5Q1icRmVeOg2M_8aJM",
+  authDomain: "live-ponto.firebaseapp.com",
+  databaseURL: "https://live-ponto-default-rtdb.firebaseio.com",
+  projectId: "live-ponto",
+  storageBucket: "live-ponto.appspot.com",
+  messagingSenderId: "396456789012",
+  appId: "1:396456789012:web:live-ponto"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
 const LOJA_KEY = 'Praiamar Shopping';
-const LOJA_TITULO = 'Praiamar Shopping';
 const TURNOS = ['entrada','saida_almoco','retorno_almoco','saida'];
 const TINFO = {
   entrada:        {l:'Entrada',        i:'🟢', b:'b-e', p:'Próximo: Saída p/ Almoço'},
@@ -128,58 +147,86 @@ const TINFO = {
   retorno_almoco: {l:'Retorno Almoço', i:'🔄', b:'b-r', p:'Próximo: Saída'},
   saida:          {l:'Saída',          i:'🔴', b:'b-s', p:'Turno completo ✓'}
 };
-const DIAS_SEMANA = ['Domingo','Segunda-feira','Terça-feira','Quarta-feira','Quinta-feira','Sexta-feira','Sábado'];
+const DIAS = ['Domingo','Segunda-feira','Terça-feira','Quarta-feira','Quinta-feira','Sexta-feira','Sábado'];
 
 function getHoje(){return new Date().toISOString().slice(0,10);}
 function getNow(){const d=new Date();return d.getHours().toString().padStart(2,'0')+':'+d.getMinutes().toString().padStart(2,'0');}
 function getDiaSemana(){return new Date().getDay();}
 function getDataFmt(){return new Date().toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric'});}
+function lojaKeyFB(k){return k.replace(/\s/g,'_').replace(/[^a-zA-Z0-9_]/g,'');}
+function vendKeyFB(v){return v.replace(/\s/g,'_').replace(/[^a-zA-Z0-9_]/g,'');}
 
-function isFeriado(){
-  try{const f=JSON.parse(localStorage.getItem('feriados_live')||'{}');return f[getHoje()]||null;}catch(e){return null;}
+// Conexão
+const connRef = ref(db, '.info/connected');
+onValue(connRef, (snap) => {
+  const badge = document.getElementById('conn-badge');
+  if(snap.val()){
+    badge.textContent='● online';
+    badge.className='online-badge';
+  } else {
+    badge.textContent='● offline';
+    badge.className='offline-badge';
+  }
+});
+
+// Feriados
+async function isFeriado(){
+  try{
+    const snap = await get(ref(db,'feriados/'+getHoje().replace(/-/g,'_')));
+    return snap.exists() ? snap.val() : null;
+  }catch(e){return null;}
 }
 
 function toMins(h){if(!h)return null;const[hh,mm]=h.split(':').map(Number);return hh*60+mm;}
-function minsToStr(m){if(m===null||isNaN(m))return null;const neg=m<0;const abs=Math.abs(m);return(neg?'-':'')+Math.floor(abs/60)+'h'+(abs%60>0?(abs%60).toString().padStart(2,'0'):'');}
 
 function detectarTurno(horaEntrada, diaSemana, feriado){
   const mins=toMins(horaEntrada);
   if(LOJA_KEY==='Bioritmo'){
-    if(diaSemana===6||feriado) return{turno:'especial',entrada:'08:00',saida:'13:00',almoco:0,label:'Sáb/Feriado (8h–13h)'};
-    if(mins<10*60) return{turno:'manha',entrada:'07:00',saida:'15:00',almoco:60,label:'Manhã (7h–15h)'};
-    return{turno:'tarde',entrada:'13:00',saida:'21:00',almoco:60,label:'Tarde (13h–21h)'};
+    if(diaSemana===6||feriado) return{entrada:'08:00',saida:'13:00',almoco:0,label:'Sáb/Feriado (8h–13h)'};
+    if(mins<10*60) return{entrada:'07:00',saida:'15:00',almoco:60,label:'Manhã (7h–15h)'};
+    return{entrada:'13:00',saida:'21:00',almoco:60,label:'Tarde (13h–21h)'};
   }
-  if(LOJA_KEY==='Azevedo Sodré'){
-    if(mins<9*60+30) return{turno:'manha',entrada:'08:30',saida:'16:50',almoco:60,label:'Manhã (8h30–16h50)'};
-    if(mins<11*60+30) return{turno:'intermediario',entrada:'10:30',saida:'18:50',almoco:60,label:'Intermediário (10h30–18h50)'};
-    return{turno:'tarde',entrada:'12:00',saida:'20:00',almoco:60,label:'Tarde (12h–20h)'};
+  if(LOJA_KEY==='Azevedo_Sodre'){
+    if(mins<9*60+30) return{entrada:'08:30',saida:'16:50',almoco:60,label:'Manhã (8h30–16h50)'};
+    if(mins<11*60+30) return{entrada:'10:30',saida:'18:50',almoco:60,label:'Intermediário (10h30–18h50)'};
+    return{entrada:'12:00',saida:'20:00',almoco:60,label:'Tarde (12h–20h)'};
   }
-  if(diaSemana===0||feriado) return{turno:'dom_feriado',entrada:'14:30',saida:'21:00',almoco:30,label:'Dom/Feriado (14h30–21h)'};
-  if(mins<11*60) return{turno:'manha',entrada:'09:40',saida:'18:00',almoco:60,label:'Manhã (9h40–18h)'};
-  if(mins<13*60) return{turno:'intermediario',entrada:'11:40',saida:'20:00',almoco:60,label:'Intermediário (11h40–20h)'};
-  return{turno:'tarde',entrada:'13:50',saida:'22:10',almoco:60,label:'Tarde (13h50–22h10)'};
+  if(diaSemana===0||feriado) return{entrada:'14:30',saida:'21:00',almoco:30,label:'Dom/Feriado (14h30–21h)'};
+  if(mins<11*60) return{entrada:'09:40',saida:'18:00',almoco:60,label:'Manhã (9h40–18h)'};
+  if(mins<13*60) return{entrada:'11:40',saida:'20:00',almoco:60,label:'Intermediário (11h40–20h)'};
+  return{entrada:'13:50',saida:'22:10',almoco:60,label:'Tarde (13h50–22h10)'};
 }
+
+function minsToStr(m){if(m===null)return null;const neg=m<0;const abs=Math.abs(m);return(neg?'-':'')+Math.floor(abs/60)+'h'+(abs%60>0?(abs%60).toString().padStart(2,'0'):'');}
 
 function calcHoras(regs){
   const e=regs.find(r=>r.tipo==='entrada');
   const s=regs.find(r=>r.tipo==='saida');
   if(!e||!s) return null;
-  const feriado=isFeriado();
-  const ti=detectarTurno(e.hora, getDiaSemana(), feriado);
+  const ti=detectarTurno(e.hora,getDiaSemana(),window._feriado);
   const eR=toMins(e.hora),sR=toMins(s.hora);
   const sA=toMins(regs.find(r=>r.tipo==='saida_almoco')?.hora);
   const rA=toMins(regs.find(r=>r.tipo==='retorno_almoco')?.hora);
   let trab=sR-eR;
   if(sA&&rA) trab-=(rA-sA); else trab-=ti.almoco;
   const prev=(toMins(ti.saida)-toMins(ti.entrada))-ti.almoco;
-  const extra=trab-prev;
-  return{trabalhado:minsToStr(trab),previsto:minsToStr(prev),extra:minsToStr(extra),extraMins:extra,turnoLabel:ti.label};
+  return{trabalhado:minsToStr(trab),extra:minsToStr(trab-prev),extraMins:trab-prev,turnoLabel:ti.label};
 }
 
-function sKey(){return 'ponto_'+LOJA_KEY+'_'+getHoje();}
-function load(){try{const r=localStorage.getItem(sKey());return r?JSON.parse(r):[];}catch(e){return[];}}
-function save(arr){try{localStorage.setItem(sKey(),JSON.stringify(arr));}catch(e){}}
-function getVendRegs(v){return load().filter(r=>r.vend===v);}
+// Carregar registros do dia do Firebase
+async function loadRegistrosDia(){
+  const hoje = getHoje().replace(/-/g,'_');
+  const lojaFB = lojaKeyFB(LOJA_KEY);
+  const snap = await get(ref(db, `ponto/${lojaFB}/${hoje}`));
+  if(!snap.exists()) return {};
+  return snap.val();
+}
+
+async function getVendRegs(vend){
+  const regs = await loadRegistrosDia();
+  const vendFB = vendKeyFB(vend);
+  return regs[vendFB] ? Object.values(regs[vendFB]) : [];
+}
 
 function updateClock(){
   const t=getNow();
@@ -188,103 +235,111 @@ function updateClock(){
 }
 setInterval(updateClock,1000);updateClock();
 
-function updateDiaInfo(){
+async function updateDiaInfo(){
   const dia=getDiaSemana();
-  const feriado=isFeriado();
-  const nomeDia=DIAS_SEMANA[dia];
-  let cls='dia-normal',txt=nomeDia;
-  if(feriado){cls='dia-feriado';txt='🎉 Feriado: '+feriado+' ('+nomeDia+')';}
+  const feriado=await isFeriado();
+  window._feriado=feriado;
+  const nomeDia=DIAS[dia];
+  let cls='',txt=nomeDia;
+  if(feriado){cls='dia-feriado';txt='🎉 Feriado: '+feriado;}
   else if(dia===0){cls='dia-domingo';txt='☀️ Domingo';}
   else if(dia===6){cls='dia-sabado';txt='🌿 Sábado';}
   document.getElementById('dia-info').innerHTML=`<div class="dia-badge ${cls}">${txt}</div>`;
   const fb=document.getElementById('feriado-bar');
   if(feriado){fb.style.display='flex';document.getElementById('feriado-nome-bar').textContent=feriado;}
-  else fb.style.display='none';
 }
 updateDiaInfo();
 
 let selTurno=null;
-function onVendChange(){
+
+async function onVendChange(){
   selTurno=null;
   document.getElementById('btn-reg').disabled=true;
   const vend=document.getElementById('f-vend').value;
-  const feitos=vend?getVendRegs(vend).map(r=>r.tipo):[];
+  if(!vend){TURNOS.forEach(t=>{document.getElementById('tb-'+t).className='tb';document.getElementById('tl-'+t).textContent=TINFO[t].l;});return;}
+  const regs=await getVendRegs(vend);
+  const feitos=regs.map(r=>r.tipo);
   TURNOS.forEach(t=>{
     const btn=document.getElementById('tb-'+t);
     const lbl=document.getElementById('tl-'+t);
     btn.className='tb';
     if(feitos.includes(t)){
       btn.classList.add('done');
-      const hr=load().find(r=>r.vend===vend&&r.tipo===t);
+      const hr=regs.find(r=>r.tipo===t);
       lbl.textContent=TINFO[t].l+(hr?' '+hr.hora:'');
     } else {
       lbl.textContent=TINFO[t].l;
     }
   });
 }
+window.onVendChange=onVendChange;
 
 function selT(tipo){
   const vend=document.getElementById('f-vend').value;
   if(!vend){alert('Selecione seu nome primeiro.');return;}
-  if(getVendRegs(vend).find(r=>r.tipo===tipo)) return;
   TURNOS.forEach(t=>{const b=document.getElementById('tb-'+t);if(!b.classList.contains('done'))b.classList.remove('sel');});
   document.getElementById('tb-'+tipo).classList.add('sel');
   selTurno=tipo;
   document.getElementById('btn-reg').disabled=false;
 }
+window.selT=selT;
 
-function registrar(){
+async function registrar(){
   const vend=document.getElementById('f-vend').value;
   if(!vend||!selTurno) return;
   const hora=getNow();
-  const arr=load();
-  arr.push({loja:LOJA_KEY,vend,tipo:selTurno,hora,data:getHoje(),original:true});
-  save(arr);
-  const info=TINFO[selTurno];
-  document.getElementById('ok-ico').textContent=info.i;
-  document.getElementById('ok-title').textContent=info.l+' registrada!';
-  document.getElementById('ok-sub').textContent=vend+' — '+hora;
-  document.getElementById('ok-prox').textContent=info.p;
-  if(selTurno==='entrada'){
-    const feriado=isFeriado();
-    const ti=detectarTurno(hora,getDiaSemana(),feriado);
-    document.getElementById('ok-turno').textContent='Turno detectado: '+ti.label;
-  } else {
-    document.getElementById('ok-turno').textContent='';
+  const hoje=getHoje().replace(/-/g,'_');
+  const lojaFB=lojaKeyFB(LOJA_KEY);
+  const vendFB=vendKeyFB(vend);
+  document.getElementById('salvando').textContent='Salvando...';
+  document.getElementById('btn-reg').disabled=true;
+  try{
+    await set(ref(db,`ponto/${lojaFB}/${hoje}/${vendFB}/${selTurno}`),{
+      loja:LOJA_KEY, vend, tipo:selTurno, hora, data:getHoje()
+    });
+    const info=TINFO[selTurno];
+    document.getElementById('ok-ico').textContent=info.i;
+    document.getElementById('ok-title').textContent=info.l+' registrada!';
+    document.getElementById('ok-sub').textContent=vend+' — '+hora;
+    document.getElementById('ok-prox').textContent=info.p;
+    if(selTurno==='entrada'){
+      const feriado=window._feriado;
+      const ti=detectarTurno(hora,getDiaSemana(),feriado);
+      document.getElementById('ok-turno').textContent='Turno: '+ti.label;
+    } else document.getElementById('ok-turno').textContent='';
+    document.getElementById('salvando').textContent='';
+    showScreen('s-ok');
+  }catch(e){
+    document.getElementById('salvando').textContent='Erro ao salvar. Verifique sua conexão.';
+    document.getElementById('btn-reg').disabled=false;
   }
-  showScreen('s-ok');
 }
+window.registrar=registrar;
 
-function renderHist(){
-  const arr=load();
-  const ag={};
-  arr.forEach(r=>{if(!ag[r.vend])ag[r.vend]=[];ag[r.vend].push(r);});
+async function renderHist(){
+  const regs=await loadRegistrosDia();
   const el=document.getElementById('hist-lista');
-  const keys=Object.keys(ag);
-  if(!keys.length){el.innerHTML='<div class="empty">Nenhum registro hoje.</div>';return;}
-  el.innerHTML=keys.map(v=>{
-    const regs=ag[v];
+  const vendedoras=Object.keys(regs);
+  if(!vendedoras.length){el.innerHTML='<div class="empty">Nenhum registro hoje.</div>';return;}
+  el.innerHTML=vendedoras.map(vendFB=>{
+    const vendRegs=Object.values(regs[vendFB]);
+    const nome=vendRegs[0]?.vend||vendFB;
     const badges=TURNOS.map(t=>{
-      const r=regs.find(x=>x.tipo===t);
-      const editado=r&&r.editado?'*':'';
-      return r?`<span class="badge ${TINFO[t].b}">${TINFO[t].l} ${r.hora}${editado}</span>`:`<span class="badge b-p">${TINFO[t].l} —</span>`;
+      const r=vendRegs.find(x=>x.tipo===t);
+      return r?`<span class="badge ${TINFO[t].b}">${TINFO[t].l} ${r.hora}</span>`:`<span class="badge b-p">${TINFO[t].l} —</span>`;
     }).join('');
-    const h=calcHoras(regs);
-    let horasHtml='';
-    if(h){
-      const exCls=h.extraMins>0?'extra-pos':h.extraMins<0?'extra-neg':'';
-      horasHtml=`<div class="hist-horas">⏱ ${h.trabalhado} trabalhadas · Previsto: ${h.previsto} · <span class="${exCls}">Extra: ${h.extra}</span> · <span style="color:#aaa">${h.turnoLabel}</span></div>`;
-    }
-    return`<div class="hist-card"><div class="hist-nome">${v}</div><div class="hist-turno">&nbsp;</div><div class="hist-badges">${badges}</div>${horasHtml}</div>`;
+    const h=calcHoras(vendRegs);
+    return`<div class="hist-card"><div class="hist-nome">${nome}</div><div class="hist-badges">${badges}</div>${h?`<div class="hist-horas">⏱ ${h.trabalhado} trabalhadas · ${h.turnoLabel}</div>`:''}</div>`;
   }).join('');
 }
 
 function showScreen(id){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
-  if(id==='s-form')onVendChange();
-  if(id==='s-hist')renderHist();
+  if(id==='s-form') onVendChange();
+  if(id==='s-hist') renderHist();
 }
+window.showScreen=showScreen;
 </script>
 </body>
 </html>
