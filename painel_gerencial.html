@@ -33,7 +33,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .btn-feriado{border-color:#e65c00;color:#e65c00}
 .btn-export{border-color:#1a7a3c;color:#1a7a3c}
 .feriado-bar{background:#fff3e0;border:1px solid #e65c00;border-radius:8px;padding:8px 14px;font-size:12px;color:#e65c00;display:flex;align-items:center;gap:8px;margin-bottom:12px}
-.stat-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:16px}
+.stat-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-bottom:16px}
 .stat{background:#f8f8f8;border-radius:8px;padding:10px 12px;text-align:center}
 .stat-val{font-size:22px;font-weight:700;color:#1a1a1a}
 .stat-lbl{font-size:10px;color:#888;margin-top:2px}
@@ -601,6 +601,7 @@ function renderHoje(){
   const emAlm=todos.filter(p=>p.regs.find(r=>r.tipo==='saida_almoco')&&!p.regs.find(r=>r.tipo==='retorno_almoco')).length;
   const completos=todos.filter(p=>TURNOS.every(t=>p.regs.find(r=>r.tipo===t))).length;
   const ocorrs=todos.filter(p=>p.regs.find(r=>r.ocorrencia)).length;
+  const folgas=todos.filter(p=>getEscalaDia(p.nome,getHoje())==='folga'||getEscalaDia(p.nome,getHoje())==='feriado').length;
   // Montar listas para o modal de detalhe
   window._statTodos = todos;
 
@@ -609,9 +610,10 @@ function renderHoje(){
     <div class="stat" id="stat-naloja"><div class="stat-val">${naLoja}</div><div class="stat-lbl">Na loja</div></div>
     <div class="stat" id="stat-almoco"><div class="stat-val">${emAlm}</div><div class="stat-lbl">Em almoço</div></div>
     <div class="stat" id="stat-completos"><div class="stat-val">${completos}</div><div class="stat-lbl">Completos</div></div>
-    <div class="stat" id="stat-ocorrencias"><div class="stat-val">${ocorrs}</div><div class="stat-lbl">Ocorrências</div></div>`;
+    <div class="stat" id="stat-ocorrencias"><div class="stat-val">${ocorrs}</div><div class="stat-lbl">Ocorrências</div></div>
+    <div class="stat" id="stat-folgas"><div class="stat-val">${folgas}</div><div class="stat-lbl">De folga/feriado</div></div>`;
   // Adicionar listeners após render
-  ['registraram','naloja','almoco','completos','ocorrencias'].forEach(tipo=>{
+  ['registraram','naloja','almoco','completos','ocorrencias','folgas'].forEach(tipo=>{
     const el=document.getElementById('stat-'+tipo);
     if(el) el.addEventListener('click',()=>abrirDetalhe(tipo));
   });
@@ -1004,6 +1006,17 @@ function abrirDetalhe(tipo){
     itens=todos.filter(p=>p.regs.find(r=>r.ocorrencia)).map(p=>{
       const ocorr=p.regs.find(r=>r.ocorrencia);
       return{nome:p.nome, info:OCORR_LABELS[ocorr.ocorrencia]||ocorr.ocorrencia, loja:p.loja};
+    });
+  }
+
+  else if(tipo==='folgas'){
+    titulo='🌴 De folga ou feriado hoje';
+    itens=todos.filter(p=>{
+      const esc=getEscalaDia(p.nome,getHoje());
+      return esc==='folga'||esc==='feriado';
+    }).map(p=>{
+      const esc=getEscalaDia(p.nome,getHoje());
+      return{nome:p.nome, info:esc==='feriado'?'🎉 Feriado':'🌴 Folga', loja:p.loja};
     });
   }
 
