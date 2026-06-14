@@ -647,15 +647,27 @@ function renderHoje(){
     const rows=pessoas.map(p=>{
       const regs=getVendRegs(loja.fb,p.nome);
       const ocorr=regs.find(r=>r.ocorrencia);
+      const escalaHoje=getEscalaDia(p.nome,getHoje());
+      const eFolga=escalaHoje==='folga';
+      const eFeriado=escalaHoje==='feriado';
       let badgesHtml='';
-      if(ocorr){const oi=OCORR_INFO[ocorr.ocorrencia]||{l:ocorr.ocorrencia,b:'b-outro'};badgesHtml=`<span class="badge ${oi.b}">${oi.l}</span>`;}
-      else{
+      let rowStyle='';
+      if(eFolga||eFeriado){
+        // Mostra badge de folga/feriado mesmo sem registro
+        const label=eFeriado?'🎉 Feriado':'🌴 Folga';
+        const cls=eFeriado?'b-feriado':'b-folga';
+        badgesHtml=`<span class="badge ${cls}">${label}</span>`;
+        rowStyle='opacity:.6;background:#fafafa;';
+      } else if(ocorr){
+        const oi=OCORR_INFO[ocorr.ocorrencia]||{l:ocorr.ocorrencia,b:'b-outro'};
+        badgesHtml=`<span class="badge ${oi.b}">${oi.l}</span>`;
+      } else {
         badgesHtml=TURNOS.map(t=>{const r=regs.find(x=>x.tipo===t);return r?`<span class="badge ${TINFO[t].b}">${TINFO[t].l} ${r.hora}${r.editado?'*':''}</span>`:`<span class="badge b-p">${TINFO[t].l}</span>`;}).join('');
         const h=calcHoras(regs,loja.fb,getHoje(),p.nome);
         if(h){const cls=h.extra>0?'extra-pos':h.extra<0?'extra-neg':'';badgesHtml+=` <span class="${cls}">${h.extraStr}</span>`;}
       }
       const temEdit=regs.some(r=>r.editado);
-      return`<div class="vend-row">
+      return`<div class="vend-row" style="${rowStyle}">
         <div><div class="vend-nome">${p.nome.split(' ').slice(0,2).join(' ')}${temEdit?' <span class="badge badge-edit">editado</span>':''}</div><div class="vend-cargo">${p.cargo}</div></div>
         <div class="vend-badges">${badgesHtml}</div>
         <button class="btn-edit" onclick="abrirEdicao('${loja.fb}','${loja.key}','${p.nome}')">✏️</button>
