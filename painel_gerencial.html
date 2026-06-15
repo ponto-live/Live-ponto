@@ -541,6 +541,7 @@ function detectarTurno(horaEntrada,lojaFB,diaSemana,feriado,feriadoEscala){
   // Feriado na escala individual tem prioridade sobre feriado geral
   const isFer = feriadoEscala || feriado;
   if(lojaFB==='Bioritmo'){
+    if(diaSemana===0) return null; // Domingo não abre
     if(diaSemana===6||isFer) return{entrada:'08:00',saida:'13:00',almoco:0,label:'Sáb/Feriado',hPrev:5*60};
     if(mins<10*60) return{entrada:'07:00',saida:'15:00',almoco:60,label:'Manhã',hPrev:7*60};
     return{entrada:'13:00',saida:'21:00',almoco:60,label:'Tarde',hPrev:7*60};

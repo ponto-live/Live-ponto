@@ -178,6 +178,7 @@ function toMins(h){if(!h)return null;const[hh,mm]=h.split(':').map(Number);retur
 function detectarTurno(horaEntrada, diaSemana, feriado){
   const mins=toMins(horaEntrada);
   if(LOJA_KEY==='Bioritmo'){
+    if(diaSemana===0) return{entrada:'',saida:'',almoco:0,label:'Domingo — não abre'};
     if(diaSemana===6||feriado) return{entrada:'08:00',saida:'13:00',almoco:0,label:'Sáb/Feriado (8h–13h)'};
     if(mins<10*60) return{entrada:'07:00',saida:'15:00',almoco:60,label:'Manhã (7h–15h)'};
     return{entrada:'13:00',saida:'21:00',almoco:60,label:'Tarde (13h–21h)'};
