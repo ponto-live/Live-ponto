@@ -320,8 +320,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
         <button class="btn-act btn-feriado" onclick="openModal('modal-feriado');renderFeriadoLista()">🎉 Feriados</button>
         <button class="btn-act btn-export" onclick="exportarExcelDia()">📊 Exportar dia</button>
         <button class="btn-act" onclick="renderHoje()">↻ Atualizar</button>
+        <button class="btn-act" onclick="navDia(-1)">◀</button>
+        <input type="date" id="hoje-data-input" class="field-input" style="max-width:150px;margin:0" onchange="renderHoje()">
+        <button class="btn-act" onclick="navDia(1)">▶</button>
+        <button class="btn-act" onclick="document.getElementById('hoje-data-input').value=getHoje();renderHoje()">Hoje</button>
       </div>
-      <div style="font-size:11px;color:#aaa">Dados em tempo real</div>
+      <div style="font-size:11px;color:#aaa" id="hoje-data-label">Dados em tempo real</div>
     </div>
     <div id="feriado-ativo-bar"></div>
     <div class="stat-grid" id="stats"></div>
@@ -586,8 +590,12 @@ function renderHoje(){
   document.getElementById('g-hora').textContent=getNow();
   document.getElementById('g-data').textContent=getDataFmt();
   renderFeriadoBar();
-  const hoje=getHoje();
-  const feriado=isFeriado();
+  const inp=document.getElementById('hoje-data-input');
+  if(!inp.value) inp.value=getHoje();
+  const hoje=inp.value;
+  const isHoje=hoje===getHoje();
+  document.getElementById('hoje-data-label').textContent=isHoje?'Dados em tempo real':new Date(hoje+'T12:00').toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'2-digit',year:'numeric'});
+  const feriado=isFeriado(hoje);
   const todos=[];
   LOJAS_CFG.forEach(l=>{
     const pessoas=getEquipePorLoja(l.key);
@@ -601,7 +609,7 @@ function renderHoje(){
   const emAlm=todos.filter(p=>p.regs.find(r=>r.tipo==='saida_almoco')&&!p.regs.find(r=>r.tipo==='retorno_almoco')).length;
   const completos=todos.filter(p=>TURNOS.every(t=>p.regs.find(r=>r.tipo===t))).length;
   const ocorrs=todos.filter(p=>p.regs.find(r=>r.ocorrencia)).length;
-  const folgas=todos.filter(p=>getEscalaDia(p.nome,getHoje())==='folga'||getEscalaDia(p.nome,getHoje())==='feriado').length;
+  const folgas=todos.filter(p=>getEscalaDia(p.nome,hoje)==='folga'||getEscalaDia(p.nome,hoje)==='feriado').length;
   // Montar listas para o modal de detalhe
   window._statTodos = todos;
 
@@ -645,9 +653,9 @@ function renderHoje(){
     const comp=pessoas.filter(p=>TURNOS.every(t=>getVendRegs(loja.fb,p.nome).find(r=>r.tipo===t))).length;
     const dot=comR===0?'dot-none':comp===total?'dot-ok':'dot-warn';
     const rows=pessoas.map(p=>{
-      const regs=getVendRegs(loja.fb,p.nome);
+      const regs=getVendRegs(loja.fb,p.nome,hoje);
       const ocorr=regs.find(r=>r.ocorrencia);
-      const escalaHoje=getEscalaDia(p.nome,getHoje());
+      const escalaHoje=getEscalaDia(p.nome,hoje);
       const eFolga=escalaHoje==='folga';
       const eFeriado=escalaHoje==='feriado';
       let badgesHtml='';
@@ -663,7 +671,7 @@ function renderHoje(){
         badgesHtml=`<span class="badge ${oi.b}">${oi.l}</span>`;
       } else {
         badgesHtml=TURNOS.map(t=>{const r=regs.find(x=>x.tipo===t);return r?`<span class="badge ${TINFO[t].b}">${TINFO[t].l} ${r.hora}${r.editado?'*':''}</span>`:`<span class="badge b-p">${TINFO[t].l}</span>`;}).join('');
-        const h=calcHoras(regs,loja.fb,getHoje(),p.nome);
+        const h=calcHoras(regs,loja.fb,hoje,p.nome);
         if(h){const cls=h.extra>0?'extra-pos':h.extra<0?'extra-neg':'';badgesHtml+=` <span class="${cls}">${h.extraStr}</span>`;}
       }
       const temEdit=regs.some(r=>r.editado);
@@ -1052,6 +1060,16 @@ function setNavTab(aba,btn){
   if(aba==='equipe') renderEquipe();
 }
 window.setNavTab=setNavTab;
+function navDia(dir){
+  const inp=document.getElementById('hoje-data-input');
+  const d=new Date((inp.value||getHoje())+'T12:00');
+  d.setDate(d.getDate()+dir);
+  const nova=d.toISOString().slice(0,10);
+  inp.value=nova;
+  renderHoje();
+}
+window.navDia=navDia;
+
 function setFiltro(f,btn){filtro=f;document.querySelectorAll('#aba-hoje .tab').forEach(t=>t.classList.remove('active'));btn.classList.add('active');renderHoje();}
 window.setFiltro=setFiltro;
 
@@ -1062,7 +1080,7 @@ function exportarExcelDia(){
     const pessoas=getEquipePorLoja(loja.key);
     const rows=[['Nome','Cargo','Tipo','Entrada','Saída Almoço','Retorno Almoço','Saída','H.Trabalhadas','H.Previstas','Extra/Falta','Turno','Editado']];
     pessoas.forEach(p=>{
-      const regs=getVendRegs(loja.fb,p.nome);
+      const regs=getVendRegs(loja.fb,p.nome,hoje);
       const ocorr=regs.find(r=>r.ocorrencia);
       if(ocorr){rows.push([p.nome,p.cargo,OCORR_INFO[ocorr.ocorrencia]?.l||ocorr.ocorrencia,'—','—','—','—','—','—','—','—',ocorr.editado?'Sim':'Não']);}
       else{
@@ -1070,7 +1088,7 @@ function exportarExcelDia(){
         const sa=regs.find(r=>r.tipo==='saida_almoco');
         const ra=regs.find(r=>r.tipo==='retorno_almoco');
         const s=regs.find(r=>r.tipo==='saida');
-        const h=calcHoras(regs,loja.fb,getHoje(),p.nome);
+        const h=calcHoras(regs,loja.fb,hoje,p.nome);
         rows.push([p.nome,p.cargo,'Normal',e?e.hora:'—',sa?sa.hora:'—',ra?ra.hora:'—',s?s.hora:'—',h?h.trabalhadoStr:'—',h?h.prevStr:'—',h?h.extraStr:'—',h?h.turnoLabel:'—',regs.some(r=>r.editado)?'Sim':'Não']);
       }
     });
