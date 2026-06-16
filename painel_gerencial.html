@@ -469,7 +469,7 @@ let eqEditIdx=null, desativarIdx=null;
 let _feriados={}, _pontoCache={}, _escala={}, _equipe=[], _log={};
 
 // UTILS
-function getHoje(){return new Date().toISOString().slice(0,10);}
+function getHoje(){const d=new Date();const br=new Date(d.toLocaleString('en-US',{timeZone:'America/Sao_Paulo'}));return br.getFullYear()+'-'+String(br.getMonth()+1).padStart(2,'0')+'-'+String(br.getDate()).padStart(2,'0');}
 function getNow(){const d=new Date();return d.getHours().toString().padStart(2,'0')+':'+d.getMinutes().toString().padStart(2,'0');}
 function getDataFmt(){return new Date().toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'2-digit',year:'numeric'});}
 function getDiaSemana(data){return data?new Date(data+'T12:00').getDay():new Date().getDay();}

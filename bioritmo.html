@@ -145,7 +145,7 @@ const TINFO = {
 };
 const DIAS = ['Domingo','Segunda-feira','Terça-feira','Quarta-feira','Quinta-feira','Sexta-feira','Sábado'];
 
-function getHoje(){return new Date().toISOString().slice(0,10);}
+function getHoje(){const d=new Date();const br=new Date(d.toLocaleString('en-US',{timeZone:'America/Sao_Paulo'}));return br.getFullYear()+'-'+String(br.getMonth()+1).padStart(2,'0')+'-'+String(br.getDate()).padStart(2,'0');}
 function getNow(){const d=new Date();return d.getHours().toString().padStart(2,'0')+':'+d.getMinutes().toString().padStart(2,'0');}
 function getDiaSemana(){return new Date().getDay();}
 function getDataFmt(){return new Date().toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric'});}
