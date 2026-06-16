@@ -721,6 +721,10 @@ async function salvarEdicao(){
   await remove(ref(db,basePath));
   if(ocorrSel2!=='normal'){
     await set(ref(db,basePath+'/ocorrencia'),{loja:lojaKey,vend,ocorrencia:ocorrSel2,data,editado:true,obs});
+    // Se for folga ou feriado, salva também na escala para aparecer no card correto
+    if(ocorrSel2==='folga'||ocorrSel2==='feriado'){
+      await setEscalaDia(vend,data,ocorrSel2);
+    }
   } else {
     const turnos=TURNOS;
     for(const t of turnos){
