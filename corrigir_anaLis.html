@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head><meta charset="UTF-8"><title>Corrigir Ana Lis</title>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<style>body{font-family:sans-serif;background:#1a1a1a;color:#f0c000;display:flex;align-items:center;justify-content:center;height:100vh;margin:0}.box{background:#222;border-radius:12px;padding:30px;text-align:center;width:400px}.btn{width:100%;padding:14px;background:#1a7a3c;color:#fff;border:none;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;margin-top:16px}.msg{margin-top:16px;font-size:13px;color:#aaa;text-align:left;background:#111;border-radius:8px;padding:12px;min-height:40px}</style>
+</head>
+<body>
+<div class="box">
+  <div style="font-size:28px;margin-bottom:10px">✏️</div>
+  <div style="font-size:16px;font-weight:600;margin-bottom:6px">Corrigir Ana Lis</div>
+  <div style="font-size:12px;color:#aaa;margin-bottom:16px">Nome: Ana Lis Bastos Assef<br>Loja: Litoral Plaza (Praia Grande)<br>Cargo: Vendedora · Admissão: 23/06/2026</div>
+  <button class="btn" id="btn">✅ Corrigir agora</button>
+  <div class="msg" id="msg">Aguardando...</div>
+</div>
+<script>
+firebase.initializeApp({
+  apiKey:"AIzaSyB9LxMVbD6opFjrp5Q1icRmVeOg2M_8aJM",
+  authDomain:"live-ponto.firebaseapp.com",
+  databaseURL:"https://live-ponto-default-rtdb.firebaseio.com",
+  projectId:"live-ponto",
+  storageBucket:"live-ponto.appspot.com",
+  messagingSenderId:"396456789012",
+  appId:"1:396456789012:web:live-ponto"
+});
+const db = firebase.database();
+
+document.getElementById('btn').addEventListener('click', async () => {
+  document.getElementById('btn').disabled = true;
+  document.getElementById('msg').textContent = 'Buscando...';
+  const snap = await db.ref('equipe').once('value');
+  const equipe = snap.val() || {};
+  let key = null;
+  for(const [k,v] of Object.entries(equipe)){
+    if(v.nome && v.nome.toLowerCase().includes('ana lis')){
+      key = k;
+      document.getElementById('msg').textContent = 'Encontrado: ' + v.nome;
+      break;
+    }
+  }
+  if(!key){
+    document.getElementById('msg').textContent = '❌ Não encontrado. Cadastrando novo...';
+    await db.ref('equipe').push({
+      nome: 'Ana Lis Bastos Assef',
+      cargo: 'Vendedora',
+      loja: 'Litoral Plaza',
+      admissao: '2026-06-23',
+      ativa: true
+    });
+    document.getElementById('msg').textContent = '✅ Ana Lis cadastrada com sucesso!';
+    return;
+  }
+  await db.ref('equipe/'+key).set({
+    nome: 'Ana Lis Bastos Assef',
+    cargo: 'Vendedora',
+    loja: 'Litoral Plaza',
+    admissao: '2026-06-23',
+    ativa: true
+  });
+  document.getElementById('msg').textContent = '✅ Ana Lis corrigida com sucesso!\nNome: Ana Lis Bastos Assef\nLoja: Litoral Plaza';
+});
+</script>
+</body>
+</html>
