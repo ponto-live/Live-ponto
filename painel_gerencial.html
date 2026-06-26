@@ -252,8 +252,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <label class="field-label">Data de admissão</label>
     <input type="date" class="field-input" id="eq-admissao">
     <div class="modal-btns">
-      <button class="btn-cancel" onclick="closeModal('modal-equipe')">Cancelar</button>
-      <button class="btn-save" onclick="salvarEquipeFB()">💾 Salvar</button>
+      <button class="btn-cancel" id="btn-cancel-equipe">Cancelar</button>
+      <button class="btn-save" id="btn-salvar-equipe">💾 Salvar</button>
     </div>
   </div>
 </div>
@@ -279,8 +279,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       ⚠️ Ficará visível como inativa até o fim do mês para fechamento da folha.
     </div>
     <div class="modal-btns">
-      <button class="btn-cancel" onclick="closeModal('modal-desativar')">Cancelar</button>
-      <button class="btn-save" style="background:#b83232" onclick="confirmarDesativarFB()">🚫 Desativar</button>
+      <button class="btn-cancel" id="btn-cancel-desativar">Cancelar</button>
+      <button class="btn-save" style="background:#b83232" id="btn-confirmar-desativar">🚫 Desativar</button>
     </div>
   </div>
 </div>
@@ -995,6 +995,12 @@ async function confirmarDesativarFB(){
   closeModal('modal-desativar');
 }
 window.confirmarDesativarFB=confirmarDesativarFB;
+
+// Listeners dos modais de equipe e desativar
+document.getElementById('btn-confirmar-desativar').addEventListener('click', confirmarDesativarFB);
+document.getElementById('btn-cancel-desativar').addEventListener('click', ()=>closeModal('modal-desativar'));
+document.getElementById('btn-salvar-equipe').addEventListener('click', salvarEquipeFB);
+document.getElementById('btn-cancel-equipe').addEventListener('click', ()=>closeModal('modal-equipe'));
 
 async function reativarVend(key){
   if(!confirm('Reativar?')) return;
