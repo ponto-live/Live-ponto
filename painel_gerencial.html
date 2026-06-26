@@ -5,9 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>LIVE! Painel Gerencial</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f2f2f2;min-height:100vh;padding:16px}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#f2f2f2;min-height:100vh;padding:16px}
 .wrap{max-width:1000px;margin:0 auto}
 .hdr{background:#1a1a1a;color:#f0c000;padding:14px 20px;border-radius:12px 12px 0 0;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px}
 .hdr-logo{font-size:22px;font-weight:700;letter-spacing:2px}
@@ -16,7 +18,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .hdr-data{font-size:11px;color:#aaa;margin-top:2px;text-align:right}
 .bdy{background:#fff;border:1px solid #e0e0e0;border-top:none;border-radius:0 0 12px 12px;padding:20px}
 .senha-overlay{position:fixed;inset:0;background:rgba(0,0,0,.65);display:flex;align-items:center;justify-content:center;z-index:9999}
-.senha-box{background:#fff;border-radius:14px;padding:30px;width:300px;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,.18)}
+.senha-box{background:#fff;border-radius:14px;padding:30px;width:300px;text-align:center}
 .senha-ico{font-size:36px;margin-bottom:10px}
 .senha-titulo{font-size:16px;font-weight:600;margin-bottom:4px}
 .senha-sub{font-size:12px;color:#888;margin-bottom:18px}
@@ -27,14 +29,15 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .nav-tab{padding:10px 16px;font-size:13px;cursor:pointer;border:none;background:transparent;color:#888;font-weight:500;border-bottom:2px solid transparent;margin-bottom:-2px;white-space:nowrap}
 .nav-tab.active{color:#1a1a1a;border-bottom-color:#f0c000;font-weight:600}
 .top-bar{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;align-items:center;justify-content:space-between}
-.top-bar-left{display:flex;gap:8px;flex-wrap:wrap}
+.top-bar-left{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 .btn-act{padding:8px 14px;border-radius:8px;font-size:12px;cursor:pointer;border:1px solid #e0e0e0;background:#fff;color:#444;white-space:nowrap}
 .btn-act:hover{background:#f5f5f5}
 .btn-feriado{border-color:#e65c00;color:#e65c00}
 .btn-export{border-color:#1a7a3c;color:#1a7a3c}
 .feriado-bar{background:#fff3e0;border:1px solid #e65c00;border-radius:8px;padding:8px 14px;font-size:12px;color:#e65c00;display:flex;align-items:center;gap:8px;margin-bottom:12px}
 .stat-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-bottom:16px}
-.stat{background:#f8f8f8;border-radius:8px;padding:10px 12px;text-align:center}
+.stat{background:#f8f8f8;border-radius:8px;padding:10px 12px;text-align:center;cursor:pointer;transition:all .15s}
+.stat:hover{background:#f0f0f0;transform:translateY(-1px)}
 .stat-val{font-size:22px;font-weight:700;color:#1a1a1a}
 .stat-lbl{font-size:10px;color:#888;margin-top:2px}
 .sec-titulo{font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;margin-top:16px}
@@ -57,13 +60,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .vend-badges{display:flex;gap:3px;flex-wrap:wrap;align-items:center}
 .badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:500}
 .b-e{background:#d4edda;color:#1a5c2e}.b-a{background:#fff3cd;color:#7a5500}.b-r{background:#d1ecf1;color:#0c5460}.b-s{background:#f8d7da;color:#7a2025}.b-p{background:#f0f0f0;color:#bbb}
-.b-folga{background:#e8f5e9;color:#2e7d32}.b-feriado{background:#fff3e0;color:#e65c00}.ec-feriado{background:#fff3e0;color:#e65c00;font-size:10px;border-radius:3px;padding:1px 3px}.b-atestado{background:#e3f2fd;color:#1565c0}
-.b-falta-j{background:#fff3e0;color:#e65c00}.b-falta-i{background:#fdecea;color:#b83232}
-.b-ferias{background:#f3e5f5;color:#6a1b9a}.b-licenca{background:#fce4ec;color:#880e4f}.b-outro{background:#f5f5f5;color:#555}
+.b-folga{background:#e8f5e9;color:#2e7d32}.b-feriado{background:#fff3e0;color:#e65c00}
+.b-atestado{background:#e3f2fd;color:#1565c0}.b-falta-j{background:#fff3e0;color:#e65c00}
+.b-falta-i{background:#fdecea;color:#b83232}.b-ferias{background:#f3e5f5;color:#6a1b9a}
+.b-licenca{background:#fce4ec;color:#880e4f}.b-outro{background:#f5f5f5;color:#555}
 .badge-edit{background:#e8eaf6;color:#3949ab;font-size:9px}
 .extra-pos{color:#1a7a3c;font-weight:600;font-size:10px}
 .extra-neg{color:#b83232;font-weight:600;font-size:10px}
-.btn-edit{padding:5px 10px;border:1px solid #e0e0e0;border-radius:6px;background:#fff;font-size:11px;cursor:pointer;color:#555;white-space:nowrap}
+.btn-edit{padding:5px 10px;border:1px solid #e0e0e0;border-radius:6px;background:#fff;font-size:11px;cursor:pointer;color:#555}
 .btn-edit:hover{background:#f0f0f0}
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:center;justify-content:center;z-index:998;padding:16px}
 .modal-overlay.open{display:flex}
@@ -95,13 +99,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .escala-table td.nome-td{text-align:left;padding-left:10px;font-weight:500;color:#1a1a1a;cursor:default;white-space:nowrap}
 .escala-table td:hover:not(.nome-td){background:#f5f5f5}
 .ec-folga{background:#e8f5e9;color:#2e7d32;font-size:10px;border-radius:3px;padding:1px 3px}
+.ec-feriado{background:#fff3e0;color:#e65c00;font-size:10px;border-radius:3px;padding:1px 3px}
 .ec-atestado{background:#e3f2fd;color:#1565c0;font-size:10px;border-radius:3px;padding:1px 3px}
 .ec-falta-j{background:#fff3e0;color:#e65c00;font-size:10px;border-radius:3px;padding:1px 3px}
 .ec-falta-i{background:#fdecea;color:#b83232;font-size:10px;border-radius:3px;padding:1px 3px}
 .ec-ferias{background:#f3e5f5;color:#6a1b9a;font-size:10px;border-radius:3px;padding:1px 3px}
 .ec-licenca{background:#fce4ec;color:#880e4f;font-size:10px;border-radius:3px;padding:1px 3px}
 .ec-trab{background:#f8f8f8;color:#aaa;font-size:9px;border-radius:3px;padding:1px 3px}
-.ec-hoje{background:#fff9e0 !important}
 .legend{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
 .legend-item{display:flex;align-items:center;gap:4px;font-size:10px;color:#555}
 .legend-dot{width:10px;height:10px;border-radius:2px}
@@ -122,7 +126,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .equipe-loja-hdr{background:#1a1a1a;color:#f0c000;padding:9px 14px;display:flex;justify-content:space-between;align-items:center}
 .equipe-loja-titulo{font-size:13px;font-weight:600}
 .equipe-add-btn{padding:4px 12px;background:transparent;border:1px solid #f0c000;color:#f0c000;border-radius:6px;font-size:11px;cursor:pointer}
-.equipe-row{display:grid;grid-template-columns:1fr auto auto;align-items:center;gap:10px;padding:10px 14px;border-top:1px solid #f5f5f5}
+.equipe-row{display:grid;grid-template-columns:1fr auto;align-items:center;gap:10px;padding:10px 14px;border-top:1px solid #f5f5f5}
 .eq-nome{font-size:13px;font-weight:500;color:#1a1a1a}
 .eq-cargo{font-size:11px;color:#aaa}
 .eq-status{font-size:10px;margin-top:2px}
@@ -135,17 +139,15 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .eq-btn-success{border-color:#d4edda;color:#1a7a3c}
 .eq-demit-badge{display:inline-block;padding:2px 7px;border-radius:10px;font-size:10px;background:#fdecea;color:#b83232;margin-left:6px}
 .conn-status{font-size:11px;padding:3px 10px;border-radius:10px;margin-left:10px}
-.stat{cursor:pointer;transition:all .15s}
-.stat:hover{background:#f0f0f0;transform:translateY(-1px)}
+.conn-ok{background:#d4edda;color:#1a5c2e}
+.conn-err{background:#fdecea;color:#b83232}
 .detalhe-modal{background:#fff;border-radius:12px;padding:20px;width:380px;max-width:100%;max-height:80vh;overflow-y:auto}
-.detalhe-titulo{font-size:15px;font-weight:600;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.detalhe-titulo{font-size:15px;font-weight:600;margin-bottom:14px}
 .detalhe-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #f5f5f5;font-size:13px}
 .detalhe-nome{font-weight:500;color:#1a1a1a}
 .detalhe-info{font-size:11px;color:#888}
 .detalhe-loja{font-size:10px;color:#aaa;display:block;margin-top:1px}
 .detalhe-vazio{text-align:center;padding:20px;font-size:12px;color:#aaa}
-.conn-ok{background:#d4edda;color:#1a5c2e}
-.conn-err{background:#fdecea;color:#b83232}
 </style>
 </head>
 <body>
@@ -155,8 +157,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <div class="senha-ico">🔐</div>
     <div class="senha-titulo">Painel Gerencial</div>
     <div class="senha-sub">LIVE! Controle de Ponto</div>
-    <input class="senha-input" type="password" id="senha-input" placeholder="••••••" maxlength="10" onkeydown="if(event.key==='Enter')verificaSenha()">
-    <button class="senha-btn" onclick="verificaSenha()">Entrar</button>
+    <input class="senha-input" type="password" id="senha-input" placeholder="••••••" maxlength="10">
+    <button class="senha-btn" id="btn-entrar">Entrar</button>
     <div class="senha-erro" id="senha-erro">Senha incorreta.</div>
   </div>
 </div>
@@ -168,17 +170,17 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <div class="modal-sub" id="modal-sub"></div>
     <div style="margin-bottom:12px;display:flex;align-items:center;gap:10px;background:#f8f8f8;padding:8px 12px;border-radius:8px">
       <label style="font-size:11px;color:#888;white-space:nowrap">📅 Data</label>
-      <input type="date" class="field-input" id="ed-data" style="max-width:160px;margin:0" onchange="carregarDadosModal(editCtx.lojaFB,editCtx.vend,this.value)">
+      <input type="date" class="field-input" id="ed-data" style="max-width:160px;margin:0">
     </div>
     <div class="ocorr-grid" id="ocorr-grid">
-      <button class="ocorr-btn sel" id="ocorr-normal" onclick="selOcorr('normal')"><span>🕐</span>Horário normal</button>
-      <button class="ocorr-btn" id="ocorr-folga" onclick="selOcorr('folga')"><span>🌴</span>Folga</button>
-      <button class="ocorr-btn" id="ocorr-atestado" onclick="selOcorr('atestado')"><span>🏥</span>Atestado</button>
-      <button class="ocorr-btn" id="ocorr-falta-j" onclick="selOcorr('falta-j')"><span>⚠️</span>Falta justif.</button>
-      <button class="ocorr-btn" id="ocorr-falta-i" onclick="selOcorr('falta-i')"><span>❌</span>Falta injustif.</button>
-      <button class="ocorr-btn" id="ocorr-ferias" onclick="selOcorr('ferias')"><span>🏖️</span>Férias</button>
-      <button class="ocorr-btn" id="ocorr-licenca" onclick="selOcorr('licenca')"><span>🤰</span>Licença</button>
-      <button class="ocorr-btn" id="ocorr-outro" onclick="selOcorr('outro')"><span>📋</span>Outro</button>
+      <button class="ocorr-btn sel" data-ocorr="normal"><span>🕐</span>Horário normal</button>
+      <button class="ocorr-btn" data-ocorr="folga"><span>🌴</span>Folga</button>
+      <button class="ocorr-btn" data-ocorr="atestado"><span>🏥</span>Atestado</button>
+      <button class="ocorr-btn" data-ocorr="falta-j"><span>⚠️</span>Falta justif.</button>
+      <button class="ocorr-btn" data-ocorr="falta-i"><span>❌</span>Falta injustif.</button>
+      <button class="ocorr-btn" data-ocorr="ferias"><span>🏖️</span>Férias</button>
+      <button class="ocorr-btn" data-ocorr="licenca"><span>🤰</span>Licença</button>
+      <button class="ocorr-btn" data-ocorr="outro"><span>📋</span>Outro</button>
     </div>
     <div id="horarios-section">
       <div class="dvd"></div>
@@ -193,8 +195,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <label class="field-label">📝 Motivo da alteração (obrigatório)</label>
     <textarea class="field-textarea" id="ed-obs" placeholder="Ex: Funcionária esqueceu de bater entrada..."></textarea>
     <div class="modal-btns">
-      <button class="btn-cancel" onclick="closeModal('modal-edit')">Cancelar</button>
-      <button class="btn-save" onclick="salvarEdicao()">💾 Salvar</button>
+      <button class="btn-cancel" id="btn-cancel-edit">Cancelar</button>
+      <button class="btn-save" id="btn-salvar-edit">💾 Salvar</button>
     </div>
   </div>
 </div>
@@ -208,9 +210,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <div><label class="field-label">Data</label><input type="date" class="field-input" id="feriado-data"></div>
       <div><label class="field-label">Nome</label><input type="text" class="field-input" id="feriado-nome" placeholder="Ex: Corpus Christi"></div>
     </div>
-    <button class="btn-save" style="width:100%;margin-bottom:12px" onclick="addFeriado()">+ Cadastrar</button>
+    <button class="btn-save" style="width:100%;margin-bottom:12px" id="btn-add-feriado">+ Cadastrar</button>
     <div id="feriado-lista" style="max-height:200px;overflow-y:auto"></div>
-    <button class="btn-cancel" style="width:100%;margin-top:10px" onclick="closeModal('modal-feriado')">Fechar</button>
+    <button class="btn-cancel" style="width:100%;margin-top:10px" id="btn-fechar-feriado">Fechar</button>
   </div>
 </div>
 
@@ -220,17 +222,26 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <h3 id="cel-titulo">Marcar dia</h3>
     <div style="font-size:11px;color:#888;margin-bottom:12px" id="cel-sub"></div>
     <div class="cel-opts">
-      <button class="cel-opt" onclick="salvarCel('trab')"><span>💼</span>Trabalhou</button>
-      <button class="cel-opt" onclick="salvarCel('folga')"><span>🌴</span>Folga</button>
-      <button class="cel-opt" onclick="salvarCel('feriado')"><span>🎉</span>Feriado</button>
-      <button class="cel-opt" onclick="salvarCel('atestado')"><span>🏥</span>Atestado</button>
-      <button class="cel-opt" onclick="salvarCel('falta-j')"><span>⚠️</span>Falta just.</button>
-      <button class="cel-opt" onclick="salvarCel('falta-i')"><span>❌</span>Falta injust.</button>
-      <button class="cel-opt" onclick="salvarCel('ferias')"><span>🏖️</span>Férias</button>
-      <button class="cel-opt" onclick="salvarCel('licenca')"><span>🤰</span>Licença</button>
-      <button class="cel-opt" onclick="salvarCel('')"><span>🗑️</span>Limpar</button>
+      <button class="cel-opt" data-cel="trab"><span>💼</span>Trabalhou</button>
+      <button class="cel-opt" data-cel="folga"><span>🌴</span>Folga</button>
+      <button class="cel-opt" data-cel="feriado"><span>🎉</span>Feriado</button>
+      <button class="cel-opt" data-cel="atestado"><span>🏥</span>Atestado</button>
+      <button class="cel-opt" data-cel="falta-j"><span>⚠️</span>Falta just.</button>
+      <button class="cel-opt" data-cel="falta-i"><span>❌</span>Falta injust.</button>
+      <button class="cel-opt" data-cel="ferias"><span>🏖️</span>Férias</button>
+      <button class="cel-opt" data-cel="licenca"><span>🤰</span>Licença</button>
+      <button class="cel-opt" data-cel=""><span>🗑️</span>Limpar</button>
     </div>
-    <button class="btn-cancel" style="width:100%;margin-top:6px" onclick="closeModal('modal-cel')">Cancelar</button>
+    <button class="btn-cancel" id="btn-cancel-cel">Cancelar</button>
+  </div>
+</div>
+
+<!-- MODAL DETALHE STAT -->
+<div class="modal-overlay" id="modal-detalhe">
+  <div class="detalhe-modal">
+    <div class="detalhe-titulo" id="detalhe-titulo"></div>
+    <div id="detalhe-lista"></div>
+    <button class="btn-cancel" style="width:100%;margin-top:14px" id="btn-fechar-detalhe">Fechar</button>
   </div>
 </div>
 
@@ -252,21 +263,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <label class="field-label">Data de admissão</label>
     <input type="date" class="field-input" id="eq-admissao">
     <div class="modal-btns">
-      <button class="btn-cancel" id="btn-cancel-equipe" onclick="window.closeModal('modal-equipe')">Cancelar</button>
-      <button class="btn-save" id="btn-salvar-equipe" onclick="window.salvarEquipeFB()">💾 Salvar</button>
+      <button class="btn-cancel" id="btn-cancel-equipe">Cancelar</button>
+      <button class="btn-save" id="btn-salvar-equipe">💾 Salvar</button>
     </div>
-  </div>
-</div>
-
-<!-- MODAL DESATIVAR -->
-<div class="modal-overlay" id="modal-desativar"><div class="modal" style="width:380px" id="modal-desativar-content"></div></div>
-
-<!-- MODAL DETALHE STAT -->
-<div class="modal-overlay" id="modal-detalhe">
-  <div class="detalhe-modal">
-    <div class="detalhe-titulo" id="detalhe-titulo"></div>
-    <div id="detalhe-lista"></div>
-    <button class="btn-cancel" style="width:100%;margin-top:14px" onclick="closeModal('modal-detalhe')">Fechar</button>
   </div>
 </div>
 
@@ -275,7 +274,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <div>
     <div style="display:flex;align-items:center">
       <div class="hdr-logo">LIVE!</div>
-      <span class="conn-status" id="conn-status">conectando...</span>
+      <span class="conn-status conn-err" id="conn-status">● conectando...</span>
     </div>
     <div class="hdr-sub">Painel Gerencial — Controle de Ponto</div>
   </div>
@@ -283,23 +282,23 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 </div>
 <div class="bdy">
   <div class="nav-principal">
-    <button class="nav-tab active" onclick="setNavTab('hoje',this)">📋 Hoje</button>
-    <button class="nav-tab" onclick="setNavTab('escala',this)">📅 Escala</button>
-    <button class="nav-tab" onclick="setNavTab('banco',this)">⏱️ Banco de Horas</button>
-    <button class="nav-tab" onclick="setNavTab('log',this)">📝 Log</button>
-    <button class="nav-tab" onclick="setNavTab('equipe',this)">👥 Equipe</button>
+    <button class="nav-tab active" data-aba="hoje">📋 Hoje</button>
+    <button class="nav-tab" data-aba="escala">📅 Escala</button>
+    <button class="nav-tab" data-aba="banco">⏱️ Banco de Horas</button>
+    <button class="nav-tab" data-aba="log">📝 Log</button>
+    <button class="nav-tab" data-aba="equipe">👥 Equipe</button>
   </div>
 
   <div id="aba-hoje">
     <div class="top-bar">
       <div class="top-bar-left">
-        <button class="btn-act btn-feriado" onclick="openModal('modal-feriado');renderFeriadoLista()">🎉 Feriados</button>
-        <button class="btn-act btn-export" onclick="exportarExcelDia()">📊 Exportar dia</button>
-        <button class="btn-act" onclick="renderHoje()">↻ Atualizar</button>
-        <button class="btn-act" onclick="navDia(-1)">◀</button>
-        <input type="date" id="hoje-data-input" class="field-input" style="max-width:150px;margin:0" onchange="renderHoje()">
-        <button class="btn-act" onclick="navDia(1)">▶</button>
-        <button class="btn-act" onclick="document.getElementById('hoje-data-input').value=getHoje();renderHoje()">Hoje</button>
+        <button class="btn-act btn-feriado" id="btn-abrir-feriado">🎉 Feriados</button>
+        <button class="btn-act btn-export" id="btn-export-dia">📊 Exportar dia</button>
+        <button class="btn-act" id="btn-atualizar">↻ Atualizar</button>
+        <button class="btn-act" id="btn-dia-prev">◀</button>
+        <input type="date" id="hoje-data-input" class="field-input" style="max-width:150px;margin:0">
+        <button class="btn-act" id="btn-dia-next">▶</button>
+        <button class="btn-act" id="btn-dia-hoje">Hoje</button>
       </div>
       <div style="font-size:11px;color:#aaa" id="hoje-data-label">Dados em tempo real</div>
     </div>
@@ -307,13 +306,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <div class="stat-grid" id="stats"></div>
     <div class="sec-titulo">Alertas</div>
     <div id="alertas" style="margin-bottom:16px"></div>
-    <div class="tabs">
-      <button class="tab active" onclick="setFiltro('Todas',this)">Todas</button>
-      <button class="tab" onclick="setFiltro('Praiamar',this)">Praiamar</button>
-      <button class="tab" onclick="setFiltro('Miramar',this)">Miramar</button>
-      <button class="tab" onclick="setFiltro('Azevedo',this)">Azevedo</button>
-      <button class="tab" onclick="setFiltro('Litoral',this)">Litoral</button>
-      <button class="tab" onclick="setFiltro('Bioritmo',this)">Bioritmo</button>
+    <div class="tabs" id="tabs-hoje">
+      <button class="tab active" data-filtro="Todas">Todas</button>
+      <button class="tab" data-filtro="Praiamar">Praiamar</button>
+      <button class="tab" data-filtro="Miramar">Miramar</button>
+      <button class="tab" data-filtro="Azevedo">Azevedo</button>
+      <button class="tab" data-filtro="Litoral">Litoral</button>
+      <button class="tab" data-filtro="Bioritmo">Bioritmo</button>
     </div>
     <div id="lojas-container"></div>
   </div>
@@ -321,19 +320,19 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <div id="aba-escala" style="display:none">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px">
       <div class="mes-nav">
-        <button onclick="mudarMes(-1)">◀</button>
+        <button id="btn-escala-prev">◀</button>
         <div class="mes-titulo" id="escala-mes-titulo"></div>
-        <button onclick="mudarMes(1)">▶</button>
+        <button id="btn-escala-next">▶</button>
       </div>
-      <button class="btn-act btn-export" onclick="exportarExcelMes()">📊 Exportar mês</button>
+      <button class="btn-act btn-export" id="btn-export-mes">📊 Exportar mês</button>
     </div>
     <div class="legend">
       <div class="legend-item"><div class="legend-dot" style="background:#e8f5e9"></div>Folga</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#fff3e0"></div>Feriado</div>
       <div class="legend-item"><div class="legend-dot" style="background:#e3f2fd"></div>Atestado</div>
       <div class="legend-item"><div class="legend-dot" style="background:#fff3e0"></div>Falta just.</div>
       <div class="legend-item"><div class="legend-dot" style="background:#fdecea"></div>Falta injust.</div>
       <div class="legend-item"><div class="legend-dot" style="background:#f3e5f5"></div>Férias</div>
-      <div class="legend-item"><div class="legend-dot" style="background:#fff3e0"></div>Feriado</div>
       <div class="legend-item"><div class="legend-dot" style="background:#fff9e0;border:1px solid #f0c000"></div>Hoje</div>
     </div>
     <div id="escala-container"></div>
@@ -342,19 +341,18 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <div id="aba-banco" style="display:none">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px">
       <div class="mes-nav">
-        <button onclick="mudarMesBanco(-1)">◀</button>
+        <button id="btn-banco-prev">◀</button>
         <div class="mes-titulo" id="banco-mes-titulo"></div>
-        <button onclick="mudarMesBanco(1)">▶</button>
+        <button id="btn-banco-next">▶</button>
       </div>
-      <button class="btn-act btn-export" onclick="exportarExcelMes()">📊 Exportar</button>
     </div>
     <div class="tabs" id="tabs-banco">
-      <button class="tab active" onclick="setFiltroBanco('Todas',this)">Todas</button>
-      <button class="tab" onclick="setFiltroBanco('Praiamar',this)">Praiamar</button>
-      <button class="tab" onclick="setFiltroBanco('Miramar',this)">Miramar</button>
-      <button class="tab" onclick="setFiltroBanco('Azevedo',this)">Azevedo</button>
-      <button class="tab" onclick="setFiltroBanco('Litoral',this)">Litoral</button>
-      <button class="tab" onclick="setFiltroBanco('Bioritmo',this)">Bioritmo</button>
+      <button class="tab active" data-filtro-banco="Todas">Todas</button>
+      <button class="tab" data-filtro-banco="Praiamar">Praiamar</button>
+      <button class="tab" data-filtro-banco="Miramar">Miramar</button>
+      <button class="tab" data-filtro-banco="Azevedo">Azevedo</button>
+      <button class="tab" data-filtro-banco="Litoral">Litoral</button>
+      <button class="tab" data-filtro-banco="Bioritmo">Bioritmo</button>
     </div>
     <div id="banco-container"></div>
   </div>
@@ -362,10 +360,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <div id="aba-log" style="display:none">
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap">
       <div style="font-size:13px;font-weight:500">📝 Log de alterações</div>
-      <input type="date" id="log-data-input" class="field-input" style="max-width:160px;margin:0" onchange="renderLog()">
-      <button class="btn-act" onclick="document.getElementById('log-data-input').value=getHoje();renderLog()">Hoje</button>
-      <button class="btn-act" onclick="logNav(-1)">◀</button>
-      <button class="btn-act" onclick="logNav(1)">▶</button>
+      <input type="date" id="log-data-input" class="field-input" style="max-width:160px;margin:0">
+      <button class="btn-act" id="btn-log-hoje">Hoje</button>
+      <button class="btn-act" id="btn-log-prev">◀</button>
+      <button class="btn-act" id="btn-log-next">▶</button>
     </div>
     <div id="log-container"></div>
   </div>
@@ -373,41 +371,30 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <div id="aba-equipe" style="display:none">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px">
       <div style="font-size:13px;font-weight:500">Gestão da equipe</div>
-      <button class="btn-act" style="border-color:#1a7a3c;color:#1a7a3c" onclick="abrirNovaVend()">+ Nova colaboradora</button>
+      <button class="btn-act" style="border-color:#1a7a3c;color:#1a7a3c" id="btn-nova-vend">+ Nova colaboradora</button>
     </div>
     <div id="equipe-container"></div>
   </div>
 </div>
 </div>
 
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
-const { initializeApp } = firebase;
-function getDatabase(app){ return firebase.database(); }
-function ref(db, path){ return db.ref(path); }
-function set(r, val){ return r.set(val); }
-function get(r){ return r.get(); }
-function remove(r){ return r.remove(); }
-function onValue(r, cb){ r.on('value', cb); }
-
-const firebaseConfig = {
-  apiKey: "AIzaSyB9LxMVbD6opFjrp5Q1icRmVeOg2M_8aJM",
-  authDomain: "live-ponto.firebaseapp.com",
-  databaseURL: "https://live-ponto-default-rtdb.firebaseio.com",
-  projectId: "live-ponto",
-  storageBucket: "live-ponto.appspot.com",
-  messagingSenderId: "396456789012",
-  appId: "1:396456789012:web:live-ponto"
-};
-
-firebase.initializeApp(firebaseConfig);
+firebase.initializeApp({
+  apiKey:"AIzaSyB9LxMVbD6opFjrp5Q1icRmVeOg2M_8aJM",
+  authDomain:"live-ponto.firebaseapp.com",
+  databaseURL:"https://live-ponto-default-rtdb.firebaseio.com",
+  projectId:"live-ponto",
+  storageBucket:"live-ponto.appspot.com",
+  messagingSenderId:"396456789012",
+  appId:"1:396456789012:web:live-ponto"
+});
 const db = firebase.database();
 
-const SENHA = '060482';
-const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
-const DIAS_SEMANA = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
-const LOJAS_CFG = [
+// ===== CONSTANTES =====
+const SENHA='060482';
+const MESES=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+const DIAS_SEMANA=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+const LOJAS_CFG=[
   {nome:'Praiamar Shopping',key:'Praiamar Shopping',fb:'Praiamar_Shopping',pessoas:[
     {nome:'André Luiz dos Anjos',cargo:'Vendedor'},
     {nome:'Izabelle Cristhina Coelho Chaves',cargo:'Vendedora'},
@@ -440,97 +427,78 @@ const LOJAS_CFG = [
 ];
 const TURNOS=['entrada','saida_almoco','retorno_almoco','saida'];
 const TINFO={entrada:{l:'Entrada',b:'b-e'},saida_almoco:{l:'Saída Almoço',b:'b-a'},retorno_almoco:{l:'Retorno Almoço',b:'b-r'},saida:{l:'Saída',b:'b-s'}};
-const OCORR_INFO={folga:{l:'Folga',b:'b-folga',ec:'ec-folga'},feriado:{l:'Feriado',b:'b-feriado',ec:'ec-feriado'},'atestado':{l:'Atestado',b:'b-atestado',ec:'ec-atestado'},'falta-j':{l:'Falta Just.',b:'b-falta-j',ec:'ec-falta-j'},'falta-i':{l:'Falta Injust.',b:'b-falta-i',ec:'ec-falta-i'},ferias:{l:'Férias',b:'b-ferias',ec:'ec-ferias'},licenca:{l:'Licença',b:'b-licenca',ec:'ec-licenca'},outro:{l:'Outro',b:'b-outro',ec:'ec-trab'}};
+const OCORR_INFO={folga:{l:'Folga',b:'b-folga',ec:'ec-folga'},feriado:{l:'Feriado',b:'b-feriado',ec:'ec-feriado'},atestado:{l:'Atestado',b:'b-atestado',ec:'ec-atestado'},'falta-j':{l:'Falta Just.',b:'b-falta-j',ec:'ec-falta-j'},'falta-i':{l:'Falta Injust.',b:'b-falta-i',ec:'ec-falta-i'},ferias:{l:'Férias',b:'b-ferias',ec:'ec-ferias'},licenca:{l:'Licença',b:'b-licenca',ec:'ec-licenca'},outro:{l:'Outro',b:'b-outro',ec:'ec-trab'}};
+const LOJAS_NOMES=['Praiamar Shopping','Miramar Shopping','Azevedo Sodré','Litoral Plaza','Bioritmo'];
+const MOTIVO_LABEL={demissao:'Demissão s/ justa causa','demissao-justa':'Demissão c/ justa causa',pedido:'Pedido de demissão',acordo:'Acordo','fim-contrato':'Fim de contrato'};
 
-// STATE
+// ===== STATE =====
 let filtro='Todas', filtroBanco='Todas';
 let escalaMes=new Date().getMonth(), escalaAno=new Date().getFullYear();
 let bancoMes=new Date().getMonth(), bancoAno=new Date().getFullYear();
-let editCtx=null, celCtx=null, ocorrSel2='normal';
+let ocorrSel='normal', editCtx=null, celCtx=null;
 let abaAtiva='hoje';
-let eqEditIdx=null, desativarIdx=null;
+let eqEditKey=null, desativarKey=null;
 let _feriados={}, _pontoCache={}, _escala={}, _equipe=[], _log={};
 
-// UTILS
+// ===== UTILS =====
 function getHoje(){const d=new Date();const br=new Date(d.toLocaleString('en-US',{timeZone:'America/Sao_Paulo'}));return br.getFullYear()+'-'+String(br.getMonth()+1).padStart(2,'0')+'-'+String(br.getDate()).padStart(2,'0');}
-function getNow(){const d=new Date();return d.getHours().toString().padStart(2,'0')+':'+d.getMinutes().toString().padStart(2,'0');}
+function getNow(){const d=new Date();const br=new Date(d.toLocaleString('en-US',{timeZone:'America/Sao_Paulo'}));return String(br.getHours()).padStart(2,'0')+':'+String(br.getMinutes()).padStart(2,'0');}
 function getDataFmt(){return new Date().toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'2-digit',year:'numeric'});}
-function getDiaSemana(data){return data?new Date(data+'T12:00').getDay():new Date().getDay();}
+function getDiaSemana(data){return new Date(data+'T12:00').getDay();}
 function toMins(h){if(!h)return null;const[hh,mm]=h.split(':').map(Number);return hh*60+mm;}
 function minsToStr(m,s){if(m===null||isNaN(m))return null;const neg=m<0;const abs=Math.abs(m);return(neg?'-':s?'+':'')+Math.floor(abs/60)+'h'+(abs%60>0?(abs%60).toString().padStart(2,'0'):'');}
 function diasNoMes(a,m){return new Date(a,m+1,0).getDate();}
-function fbDate(d){return (d||getHoje()).replace(/-/g,'_');}
+function fbDate(d){return(d||getHoje()).replace(/-/g,'_');}
 function vendFB(v){return v.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,'_').replace(/[^a-zA-Z0-9_]/g,'');}
 
-window.getHoje=getHoje; window.getNow=getNow;
-
-// CONEXÃO
-db.ref('.info/connected').on("value",((snap))=>{
+// ===== FIREBASE LISTENERS =====
+db.ref('.info/connected').on('value',snap=>{
   const el=document.getElementById('conn-status');
   if(snap.val()){el.textContent='● online';el.className='conn-status conn-ok';}
   else{el.textContent='● offline';el.className='conn-status conn-err';}
 });
+db.ref('ponto').on('value',snap=>{_pontoCache=snap.val()||{};if(abaAtiva==='hoje')renderHoje();});
+db.ref('escala').on('value',snap=>{_escala=snap.val()||{};if(abaAtiva==='escala')renderEscala();if(abaAtiva==='banco')renderBanco();});
+db.ref('feriados').on('value',snap=>{_feriados=snap.val()||{};renderFeriadoBar();});
+db.ref('equipe').on('value',snap=>{_equipe=snap.val()?Object.entries(snap.val()).map(([k,v])=>({...v,_key:k})):[];if(abaAtiva==='equipe')renderEquipe();});
+db.ref('log').on('value',snap=>{_log=snap.val()||{};if(abaAtiva==='log')renderLog();});
 
-// FIREBASE LISTENERS
-db.ref('ponto').on("value",((snap))=>{_pontoCache=snap.val()||{};if(abaAtiva==='hoje')renderHoje();});
-db.ref('escala').on("value",((snap))=>{_escala=snap.val()||{};if(abaAtiva==='escala')renderEscala();if(abaAtiva==='banco')renderBanco();});
-db.ref('feriados').on("value",((snap))=>{_feriados=snap.val()||{};renderFeriadoBar();});
-db.ref('equipe').on("value",((snap))=>{_equipe=snap.val()?Object.entries(snap.val()).map(([k,v])=>({...v,_key:k})):[];if(abaAtiva==='equipe')renderEquipe();});
-db.ref('log').on("value",((snap))=>{_log=snap.val()||{};if(abaAtiva==='log')renderLog();});
-
-// SENHA
-function verificaSenha(){
-  if(document.getElementById('senha-input').value===SENHA){
-    document.getElementById('senha-overlay').style.display='none';
-    initEquipe();
-    renderHoje();
-  } else {
-    document.getElementById('senha-erro').style.display='block';
-    document.getElementById('senha-input').value='';
-  }
+// ===== HELPERS =====
+function isFeriado(data){return _feriados[fbDate(data||getHoje())]||null;}
+function getEscalaDia(vend,data){return _escala[vendFB(vend)+'_'+fbDate(data)]||'';}
+function setEscalaDia(vend,data,val){
+  const key=vendFB(vend)+'_'+fbDate(data);
+  if(val) return db.ref('escala/'+key).set(val);
+  else return db.ref('escala/'+key).remove();
 }
-window.verificaSenha=verificaSenha;
-
-// MODAIS
-function openModal(id){document.getElementById(id).classList.add('open');}
-function closeModal(id){document.getElementById(id).classList.remove('open');}
-window.openModal=openModal; window.closeModal=closeModal;
-
-// FERIADOS
-function isFeriado(data){return _feriados[fbDate(data)]||null;}
-async function addFeriado(){
-  const d=document.getElementById('feriado-data').value;
-  const n=document.getElementById('feriado-nome').value.trim();
-  if(!d||!n){alert('Preencha data e nome.');return;}
-  await db.ref('feriados/'+fbDate(d)).set(n);
-  renderFeriadoLista();
+function getVendRegs(lojaFB,vend,data){
+  const dk=fbDate(data||getHoje());
+  const vk=vendFB(vend);
+  const d=_pontoCache[lojaFB]&&_pontoCache[lojaFB][dk]&&_pontoCache[lojaFB][dk][vk];
+  return d?Object.values(d):[];
 }
-window.addFeriado=addFeriado;
-async function delFeriado(d){await db.ref('feriados/'+d));renderFeriadoLista();}
-window.delFeriado=delFeriado;
-function renderFeriadoLista(){
-  const keys=Object.keys(_feriados).sort();
-  document.getElementById('feriado-lista').innerHTML=keys.length?keys.map(d=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #f5f5f5;font-size:12px"><span>${new Date(d.replace(/_/g,'-')+'T12:00').toLocaleDateString('pt-BR')} — ${_feriados[d]}</span><button onclick="delFeriado('${d}')" style="background:none;border:none;color:#b83232;cursor:pointer">✕</button></div>`).join(''):'<div style="font-size:12px;color:#aaa;text-align:center;padding:10px">Nenhum feriado cadastrado</div>';
-}
-function renderFeriadoBar(){
-  const f=isFeriado();
-  const el=document.getElementById('feriado-ativo-bar');
-  el.innerHTML=f?`<div class="feriado-bar">🎉 <strong>Hoje é feriado:</strong> ${f} — horário especial ativo. <button style="margin-left:auto;background:none;border:none;color:#e65c00;cursor:pointer;font-size:11px" onclick="openModal('modal-feriado');renderFeriadoLista()">Editar</button></div>`:'';
+function getEquipePorLoja(lojaKey){
+  const hoje=getHoje();
+  const mesAtual=hoje.substring(0,7);
+  if(!_equipe.length) return LOJAS_CFG.find(l=>l.key===lojaKey)?.pessoas||[];
+  return _equipe.filter(p=>{
+    if(p.loja!==lojaKey) return false;
+    if(p.ativa) return true;
+    if(p.dataSaida) return p.dataSaida.substring(0,7)>=mesAtual;
+    return false;
+  });
 }
 
-// TURNO
 function detectarTurno(horaEntrada,lojaFB,diaSemana,feriado,feriadoEscala){
   const mins=toMins(horaEntrada);
-  // Feriado na escala individual tem prioridade sobre feriado geral
-  const isFer = feriadoEscala || feriado;
+  const isFer=feriadoEscala||feriado;
   if(lojaFB==='Bioritmo'){
-    if(diaSemana===0) return null; // Domingo não abre
+    if(diaSemana===0) return null;
     if(diaSemana===6||isFer) return{entrada:'08:00',saida:'13:00',almoco:0,label:'Sáb/Feriado',hPrev:5*60};
     if(mins<10*60) return{entrada:'07:00',saida:'15:00',almoco:60,label:'Manhã',hPrev:7*60};
     return{entrada:'13:00',saida:'21:00',almoco:60,label:'Tarde',hPrev:7*60};
   }
   if(lojaFB==='Azevedo_Sodre'){
-    // Azevedo não abre em feriado — tratado como folga no calcBancoMes
     if(mins<9*60+30) return{entrada:'08:30',saida:'16:50',almoco:60,label:'Manhã',hPrev:7*60+20};
     if(mins<11*60+30) return{entrada:'10:30',saida:'18:50',almoco:60,label:'Intermediário',hPrev:7*60+20};
     return{entrada:'12:00',saida:'20:00',almoco:60,label:'Tarde',hPrev:7*60+20};
@@ -544,15 +512,15 @@ function detectarTurno(horaEntrada,lojaFB,diaSemana,feriado,feriadoEscala){
 function calcHoras(regs,lojaFB,data,vend){
   if(!regs) return null;
   const arr=Array.isArray(regs)?regs:Object.values(regs);
-  const ocorr=arr.find(r=>r.ocorrencia);
-  if(ocorr) return null;
+  if(arr.find(r=>r.ocorrencia)) return null;
   const e=arr.find(r=>r.tipo==='entrada');
   const s=arr.find(r=>r.tipo==='saida');
   if(!e||!s) return null;
-  const dia=getDiaSemana(data);
+  const dia=getDiaSemana(data||getHoje());
   const feriado=isFeriado(data);
-  const feriadoEscala=vend?getEscalaDia(vend,data)==='feriado':false;
-  const ti=detectarTurno(e.hora,lojaFB,dia,feriado,feriadoEscala);
+  const ferEscala=vend?getEscalaDia(vend,data||getHoje())==='feriado':false;
+  const ti=detectarTurno(e.hora,lojaFB,dia,feriado,ferEscala);
+  if(!ti) return null;
   const eR=toMins(e.hora),sR=toMins(s.hora);
   const sA=toMins(arr.find(r=>r.tipo==='saida_almoco')?.hora);
   const rA=toMins(arr.find(r=>r.tipo==='retorno_almoco')?.hora);
@@ -562,30 +530,112 @@ function calcHoras(regs,lojaFB,data,vend){
   return{trabalhado:trab,trabalhadoStr:minsToStr(trab),previsto:ti.hPrev,prevStr:minsToStr(ti.hPrev),extra,extraStr:minsToStr(extra,true),turnoLabel:ti.label};
 }
 
-function getVendRegs(lojaFB,vend,data){
-  const dk=fbDate(data);
-  const vk=vendFB(vend);
-  const d=_pontoCache[lojaFB]?.[dk]?.[vk];
-  return d?Object.values(d):[];
+// ===== MODAIS =====
+function openModal(id){document.getElementById(id).classList.add('open');}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+
+// ===== SENHA =====
+document.getElementById('btn-entrar').addEventListener('click',verificaSenha);
+document.getElementById('senha-input').addEventListener('keydown',e=>{if(e.key==='Enter')verificaSenha();});
+function verificaSenha(){
+  if(document.getElementById('senha-input').value===SENHA){
+    document.getElementById('senha-overlay').style.display='none';
+    document.getElementById('hoje-data-input').value=getHoje();
+    document.getElementById('log-data-input').value=getHoje();
+    initEquipe();
+    renderHoje();
+  } else {
+    document.getElementById('senha-erro').style.display='block';
+    document.getElementById('senha-input').value='';
+  }
 }
 
-// RENDER HOJE
+// ===== TABS NAV =====
+document.querySelectorAll('.nav-tab').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    abaAtiva=btn.dataset.aba;
+    document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+    btn.classList.add('active');
+    ['hoje','escala','banco','log','equipe'].forEach(a=>document.getElementById('aba-'+a).style.display=a===abaAtiva?'block':'none');
+    if(abaAtiva==='hoje') renderHoje();
+    if(abaAtiva==='escala') renderEscala();
+    if(abaAtiva==='banco') renderBanco();
+    if(abaAtiva==='log') renderLog();
+    if(abaAtiva==='equipe') renderEquipe();
+  });
+});
+
+// ===== FILTROS HOJE =====
+document.querySelectorAll('#tabs-hoje .tab').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    filtro=btn.dataset.filtro;
+    document.querySelectorAll('#tabs-hoje .tab').forEach(t=>t.classList.remove('active'));
+    btn.classList.add('active');
+    renderHoje();
+  });
+});
+
+// ===== FILTROS BANCO =====
+document.querySelectorAll('#tabs-banco .tab').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    filtroBanco=btn.dataset.filtroBanco;
+    document.querySelectorAll('#tabs-banco .tab').forEach(t=>t.classList.remove('active'));
+    btn.classList.add('active');
+    renderBanco();
+  });
+});
+
+// ===== BOTÕES HOJE =====
+document.getElementById('btn-atualizar').addEventListener('click',renderHoje);
+document.getElementById('btn-abrir-feriado').addEventListener('click',()=>{openModal('modal-feriado');renderFeriadoLista();});
+document.getElementById('btn-export-dia').addEventListener('click',exportarExcelDia);
+document.getElementById('btn-dia-hoje').addEventListener('click',()=>{document.getElementById('hoje-data-input').value=getHoje();renderHoje();});
+document.getElementById('btn-dia-prev').addEventListener('click',()=>{
+  const inp=document.getElementById('hoje-data-input');
+  const d=new Date((inp.value||getHoje())+'T12:00');d.setDate(d.getDate()-1);inp.value=d.toISOString().slice(0,10);renderHoje();
+});
+document.getElementById('btn-dia-next').addEventListener('click',()=>{
+  const inp=document.getElementById('hoje-data-input');
+  const d=new Date((inp.value||getHoje())+'T12:00');d.setDate(d.getDate()+1);
+  if(d.toISOString().slice(0,10)>getHoje()) return;
+  inp.value=d.toISOString().slice(0,10);renderHoje();
+});
+document.getElementById('hoje-data-input').addEventListener('change',renderHoje);
+
+// ===== FERIADOS =====
+document.getElementById('btn-add-feriado').addEventListener('click',addFeriado);
+document.getElementById('btn-fechar-feriado').addEventListener('click',()=>closeModal('modal-feriado'));
+function addFeriado(){
+  const d=document.getElementById('feriado-data').value;
+  const n=document.getElementById('feriado-nome').value.trim();
+  if(!d||!n){alert('Preencha data e nome.');return;}
+  db.ref('feriados/'+fbDate(d)).set(n);
+}
+function renderFeriadoLista(){
+  const keys=Object.keys(_feriados).sort();
+  const el=document.getElementById('feriado-lista');
+  el.innerHTML=keys.length?keys.map(d=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #f5f5f5;font-size:12px"><span>${new Date(d.replace(/_/g,'-')+'T12:00').toLocaleDateString('pt-BR')} — ${_feriados[d]}</span><button data-del="${d}" style="background:none;border:none;color:#b83232;cursor:pointer">✕</button></div>`).join(''):'<div style="font-size:12px;color:#aaa;text-align:center;padding:10px">Nenhum feriado cadastrado</div>';
+  el.querySelectorAll('[data-del]').forEach(btn=>btn.addEventListener('click',()=>db.ref('feriados/'+btn.dataset.del).remove()));
+}
+function renderFeriadoBar(){
+  const f=isFeriado();
+  document.getElementById('feriado-ativo-bar').innerHTML=f?`<div class="feriado-bar">🎉 <strong>Hoje é feriado:</strong> ${f} — horário especial ativo.</div>`:'';
+}
+
+// ===== RENDER HOJE =====
 function renderHoje(){
-  document.getElementById('g-hora').textContent=getNow();
-  document.getElementById('g-data').textContent=getDataFmt();
-  renderFeriadoBar();
   const inp=document.getElementById('hoje-data-input');
   if(!inp.value) inp.value=getHoje();
   const hoje=inp.value;
   const isHoje=hoje===getHoje();
   document.getElementById('hoje-data-label').textContent=isHoje?'Dados em tempo real':new Date(hoje+'T12:00').toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'2-digit',year:'numeric'});
-  const feriado=isFeriado(hoje);
+  document.getElementById('g-hora').textContent=getNow();
+  document.getElementById('g-data').textContent=getDataFmt();
+  renderFeriadoBar();
   const todos=[];
   LOJAS_CFG.forEach(l=>{
-    const pessoas=getEquipePorLoja(l.key);
-    pessoas.forEach(p=>{
-      const regs=getVendRegs(l.fb,p.nome);
-      todos.push({loja:l.nome,lojaFB:l.fb,lojaKey:l.key,nome:p.nome,cargo:p.cargo,ativa:p.ativa,regs});
+    getEquipePorLoja(l.key).forEach(p=>{
+      todos.push({loja:l.nome,lojaFB:l.fb,lojaKey:l.key,nome:p.nome,cargo:p.cargo,regs:getVendRegs(l.fb,p.nome,hoje)});
     });
   });
   const comReg=todos.filter(p=>p.regs.length>0).length;
@@ -593,62 +643,55 @@ function renderHoje(){
   const emAlm=todos.filter(p=>p.regs.find(r=>r.tipo==='saida_almoco')&&!p.regs.find(r=>r.tipo==='retorno_almoco')).length;
   const completos=todos.filter(p=>TURNOS.every(t=>p.regs.find(r=>r.tipo===t))).length;
   const ocorrs=todos.filter(p=>p.regs.find(r=>r.ocorrencia)).length;
-  const folgas=todos.filter(p=>getEscalaDia(p.nome,hoje)==='folga'||getEscalaDia(p.nome,hoje)==='feriado').length;
-  // Montar listas para o modal de detalhe
-  window._statTodos = todos;
+  const folgas=todos.filter(p=>{const e=getEscalaDia(p.nome,hoje);return e==='folga'||e==='feriado';}).length;
 
-  document.getElementById('stats').innerHTML=`
-    <div class="stat" id="stat-registraram"><div class="stat-val">${comReg}</div><div class="stat-lbl">Registraram</div></div>
-    <div class="stat" id="stat-naloja"><div class="stat-val">${naLoja}</div><div class="stat-lbl">Na loja</div></div>
-    <div class="stat" id="stat-almoco"><div class="stat-val">${emAlm}</div><div class="stat-lbl">Em almoço</div></div>
-    <div class="stat" id="stat-completos"><div class="stat-val">${completos}</div><div class="stat-lbl">Completos</div></div>
-    <div class="stat" id="stat-ocorrencias"><div class="stat-val">${ocorrs}</div><div class="stat-lbl">Ocorrências</div></div>
-    <div class="stat" id="stat-folgas"><div class="stat-val">${folgas}</div><div class="stat-lbl">De folga/feriado</div></div>`;
-  // Adicionar listeners após render
-  ['registraram','naloja','almoco','completos','ocorrencias','folgas'].forEach(tipo=>{
-    const el=document.getElementById('stat-'+tipo);
-    if(el) el.addEventListener('click',()=>abrirDetalhe(tipo));
+  const statsEl=document.getElementById('stats');
+  statsEl.innerHTML=`
+    <div class="stat" data-stat="registraram"><div class="stat-val">${comReg}</div><div class="stat-lbl">Registraram</div></div>
+    <div class="stat" data-stat="naloja"><div class="stat-val">${naLoja}</div><div class="stat-lbl">Na loja</div></div>
+    <div class="stat" data-stat="almoco"><div class="stat-val">${emAlm}</div><div class="stat-lbl">Em almoço</div></div>
+    <div class="stat" data-stat="completos"><div class="stat-val">${completos}</div><div class="stat-lbl">Completos</div></div>
+    <div class="stat" data-stat="ocorrencias"><div class="stat-val">${ocorrs}</div><div class="stat-lbl">Ocorrências</div></div>
+    <div class="stat" data-stat="folgas"><div class="stat-val">${folgas}</div><div class="stat-lbl">De folga/feriado</div></div>`;
+  statsEl.querySelectorAll('.stat').forEach(el=>{
+    el.addEventListener('click',()=>abrirDetalhe(el.dataset.stat,todos,hoje));
   });
+
   // Alertas
-  const alertas=[];
   const agora=toMins(getNow());
+  const alertas=[];
   todos.forEach(p=>{
     if(p.regs.find(r=>r.ocorrencia)) return;
-    if(!p.regs.find(r=>r.tipo==='entrada')) return;
     const e=p.regs.find(r=>r.tipo==='entrada');
-    const ti=detectarTurno(e.hora,p.lojaFB,new Date().getDay(),feriado);
+    if(!e) return;
+    const ti=detectarTurno(e.hora,p.lojaFB,getDiaSemana(hoje),isFeriado(hoje),getEscalaDia(p.nome,hoje)==='feriado');
+    if(!ti) return;
     const atraso=toMins(e.hora)-toMins(ti.entrada);
     if(atraso>10) alertas.push({tipo:'warn',msg:`${p.nome.split(' ')[0]} (${p.loja.split(' ')[0]}) — entrada ${e.hora}, previsto ${ti.entrada} (+${atraso}min)`});
-    if(p.regs.find(r=>r.tipo==='saida_almoco')&&!p.regs.find(r=>r.tipo==='retorno_almoco')){
-      const sA=p.regs.find(r=>r.tipo==='saida_almoco');
+    const sA=p.regs.find(r=>r.tipo==='saida_almoco');
+    const rA=p.regs.find(r=>r.tipo==='retorno_almoco');
+    if(sA&&!rA){
       const tAlm=agora-toMins(sA.hora);
       if(tAlm>ti.almoco+10) alertas.push({tipo:'danger',msg:`🚨 ${p.nome.split(' ')[0]} (${p.loja.split(' ')[0]}) — almoço há ${minsToStr(tAlm)}, previsto ${ti.almoco}min`});
-      else alertas.push({tipo:'warn',msg:`${p.nome.split(' ')[0]} (${p.loja.split(' ')[0]}) — em almoço desde ${sA.hora}`});
     }
   });
-  const aEl=document.getElementById('alertas');
-  aEl.innerHTML=alertas.length?alertas.map(a=>`<div class="alerta-row ${a.tipo==='danger'?'al-danger':'al-warn'}">${a.msg}</div>`).join(''):'<div class="alerta-row al-ok">✅ Nenhum alerta.</div>';
-  // Lojas
+  document.getElementById('alertas').innerHTML=alertas.length?alertas.map(a=>`<div class="alerta-row ${a.tipo==='danger'?'al-danger':'al-warn'}">${a.msg}</div>`).join(''):'<div class="alerta-row al-ok">✅ Nenhum alerta.</div>';
+
   const lojasFilt=filtro==='Todas'?LOJAS_CFG:LOJAS_CFG.filter(l=>l.nome.includes(filtro)||l.fb.includes(filtro));
   document.getElementById('lojas-container').innerHTML=lojasFilt.map(loja=>{
     const pessoas=getEquipePorLoja(loja.key);
-    const total=pessoas.length;
-    const comR=pessoas.filter(p=>getVendRegs(loja.fb,p.nome).length>0).length;
-    const comp=pessoas.filter(p=>TURNOS.every(t=>getVendRegs(loja.fb,p.nome).find(r=>r.tipo===t))).length;
-    const dot=comR===0?'dot-none':comp===total?'dot-ok':'dot-warn';
+    const comR=pessoas.filter(p=>getVendRegs(loja.fb,p.nome,hoje).length>0).length;
+    const comp=pessoas.filter(p=>TURNOS.every(t=>getVendRegs(loja.fb,p.nome,hoje).find(r=>r.tipo===t))).length;
+    const dot=comR===0?'dot-none':comp===pessoas.length?'dot-ok':'dot-warn';
     const rows=pessoas.map(p=>{
       const regs=getVendRegs(loja.fb,p.nome,hoje);
       const ocorr=regs.find(r=>r.ocorrencia);
       const escalaHoje=getEscalaDia(p.nome,hoje);
-      const eFolga=escalaHoje==='folga';
-      const eFeriado=escalaHoje==='feriado';
+      const eFolga=escalaHoje==='folga'||escalaHoje==='feriado';
       let badgesHtml='';
       let rowStyle='';
-      if(eFolga||eFeriado){
-        // Mostra badge de folga/feriado mesmo sem registro
-        const label=eFeriado?'🎉 Feriado':'🌴 Folga';
-        const cls=eFeriado?'b-feriado':'b-folga';
-        badgesHtml=`<span class="badge ${cls}">${label}</span>`;
+      if(eFolga&&!ocorr){
+        badgesHtml=`<span class="badge ${escalaHoje==='feriado'?'b-feriado':'b-folga'}">${escalaHoje==='feriado'?'🎉 Feriado':'🌴 Folga'}</span>`;
         rowStyle='opacity:.6;background:#fafafa;';
       } else if(ocorr){
         const oi=OCORR_INFO[ocorr.ocorrencia]||{l:ocorr.ocorrencia,b:'b-outro'};
@@ -659,157 +702,165 @@ function renderHoje(){
         if(h){const cls=h.extra>0?'extra-pos':h.extra<0?'extra-neg':'';badgesHtml+=` <span class="${cls}">${h.extraStr}</span>`;}
       }
       const temEdit=regs.some(r=>r.editado);
-      return`<div class="vend-row" style="${rowStyle}">
+      return `<div class="vend-row" style="${rowStyle}">
         <div><div class="vend-nome">${p.nome.split(' ').slice(0,2).join(' ')}${temEdit?' <span class="badge badge-edit">editado</span>':''}</div><div class="vend-cargo">${p.cargo}</div></div>
         <div class="vend-badges">${badgesHtml}</div>
-        <button class="btn-edit" onclick="abrirEdicao('${loja.fb}','${loja.key}','${p.nome}')">✏️</button>
+        <button class="btn-edit" data-loja-fb="${loja.fb}" data-loja-key="${loja.key}" data-vend="${p.nome}">✏️</button>
       </div>`;
     }).join('');
-    return`<div class="loja-sec"><div class="loja-hdr"><div><span class="dot ${dot}"></span><span class="loja-nome">${loja.nome}</span></div><div class="loja-resumo">${comR}/${total} · ${comp} completos</div></div>${rows}</div>`;
+    return`<div class="loja-sec"><div class="loja-hdr"><div><span class="dot ${dot}"></span><span class="loja-nome">${loja.nome}</span></div><div class="loja-resumo">${comR}/${pessoas.length} · ${comp} completos</div></div>${rows}</div>`;
   }).join('');
-}
-window.renderHoje=renderHoje;
 
-// EDIÇÃO
-function selOcorr(tipo){
-  ocorrSel2=tipo;
-  document.querySelectorAll('.ocorr-btn').forEach(b=>b.classList.remove('sel'));
-  document.getElementById('ocorr-'+tipo)?.classList.add('sel');
-  document.getElementById('horarios-section').style.display=tipo==='normal'?'block':'none';
+  // Listeners dos botões de edição
+  document.querySelectorAll('.btn-edit').forEach(btn=>{
+    btn.addEventListener('click',()=>abrirEdicao(btn.dataset.lojaFb,btn.dataset.lojaKey,btn.dataset.vend,hoje));
+  });
 }
-window.selOcorr=selOcorr;
 
-async function abrirEdicao(lojaFB,lojaKey,vend){
-  // Pega a data atual selecionada na aba Hoje
-  const dataAtual=document.getElementById('hoje-data-input')?.value||getHoje();
+// ===== DETALHE STATS =====
+function abrirDetalhe(tipo,todos,hoje){
+  const OCORR_LABELS={folga:'🌴 Folga',feriado:'🎉 Feriado',atestado:'🏥 Atestado','falta-j':'⚠️ Falta justif.','falta-i':'❌ Falta injustif.',ferias:'🏖️ Férias',licenca:'🤰 Licença',outro:'📋 Outro'};
+  let titulo='',itens=[];
+  if(tipo==='registraram'){titulo='📋 Registraram hoje';itens=todos.filter(p=>p.regs.length>0).map(p=>({nome:p.nome,info:'Entrou: '+(p.regs.find(r=>r.tipo==='entrada')?.hora||'—'),loja:p.loja}));}
+  else if(tipo==='naloja'){titulo='🏪 Na loja agora';itens=todos.filter(p=>p.regs.find(r=>r.tipo==='entrada')&&!p.regs.find(r=>r.tipo==='saida')&&!p.regs.find(r=>r.ocorrencia)).map(p=>({nome:p.nome,info:'Entrada: '+(p.regs.find(r=>r.tipo==='entrada')?.hora||'—'),loja:p.loja}));}
+  else if(tipo==='almoco'){titulo='🍽️ Em almoço agora';itens=todos.filter(p=>p.regs.find(r=>r.tipo==='saida_almoco')&&!p.regs.find(r=>r.tipo==='retorno_almoco')).map(p=>({nome:p.nome,info:'Saiu: '+(p.regs.find(r=>r.tipo==='saida_almoco')?.hora||'—'),loja:p.loja}));}
+  else if(tipo==='completos'){titulo='✅ Turno completo';itens=todos.filter(p=>TURNOS.every(t=>p.regs.find(r=>r.tipo===t))).map(p=>{const h=calcHoras(p.regs,p.lojaFB,hoje,p.nome);return{nome:p.nome,info:h?`${h.trabalhadoStr} · ${h.extraStr}`:'—',loja:p.loja};});}
+  else if(tipo==='ocorrencias'){titulo='📋 Ocorrências';itens=todos.filter(p=>p.regs.find(r=>r.ocorrencia)).map(p=>{const o=p.regs.find(r=>r.ocorrencia);return{nome:p.nome,info:OCORR_LABELS[o.ocorrencia]||o.ocorrencia,loja:p.loja};});}
+  else if(tipo==='folgas'){titulo='🌴 De folga ou feriado';itens=todos.filter(p=>{const e=getEscalaDia(p.nome,hoje);return e==='folga'||e==='feriado';}).map(p=>{const e=getEscalaDia(p.nome,hoje);return{nome:p.nome,info:e==='feriado'?'🎉 Feriado':'🌴 Folga',loja:p.loja};});}
+  document.getElementById('detalhe-titulo').textContent=titulo;
+  document.getElementById('detalhe-lista').innerHTML=itens.length?itens.map(i=>`<div class="detalhe-row"><div><div class="detalhe-nome">${i.nome.split(' ').slice(0,2).join(' ')}</div><span class="detalhe-loja">${i.loja}</span></div><div class="detalhe-info">${i.info}</div></div>`).join(''):'<div class="detalhe-vazio">Nenhuma pessoa nesta categoria.</div>';
+  openModal('modal-detalhe');
+}
+document.getElementById('btn-fechar-detalhe').addEventListener('click',()=>closeModal('modal-detalhe'));
+
+// ===== EDIÇÃO =====
+document.querySelectorAll('.ocorr-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    ocorrSel=btn.dataset.ocorr;
+    document.querySelectorAll('.ocorr-btn').forEach(b=>b.classList.remove('sel'));
+    btn.classList.add('sel');
+    document.getElementById('horarios-section').style.display=ocorrSel==='normal'?'block':'none';
+  });
+});
+document.getElementById('btn-cancel-edit').addEventListener('click',()=>closeModal('modal-edit'));
+document.getElementById('btn-salvar-edit').addEventListener('click',salvarEdicao);
+document.getElementById('ed-data').addEventListener('change',function(){
+  if(editCtx) carregarDadosModal(editCtx.lojaFB,editCtx.vend,this.value);
+});
+
+async function abrirEdicao(lojaFB,lojaKey,vend,hoje){
   editCtx={lojaFB,lojaKey,vend};
-  document.getElementById('modal-titulo').textContent='✏️ '+vend.split(' ')[0];
+  document.getElementById('modal-titulo').textContent='✏️ '+vend.split(' ').slice(0,2).join(' ');
   document.getElementById('modal-sub').textContent=lojaKey;
-  document.getElementById('ed-data').value=dataAtual;
-  // Carrega os dados do Firebase direto para garantir que está vendo o dia certo
-  await carregarDadosModal(lojaFB,vend,dataAtual);
+  document.getElementById('ed-data').value=hoje||getHoje();
   document.getElementById('ed-obs').value='';
+  await carregarDadosModal(lojaFB,vend,hoje||getHoje());
   openModal('modal-edit');
 }
 
 async function carregarDadosModal(lojaFB,vend,data){
-  const snap=await db.ref(`ponto/${lojaFB}/${fbDate(data)}/${vendFB(vend)}`));
+  const snap=await db.ref(`ponto/${lojaFB}/${fbDate(data)}/${vendFB(vend)}`).once('value');
   const dados=snap.exists()?snap.val():{};
-  const regsArr=Object.values(dados);
-  const ocorr=regsArr.find(r=>r.ocorrencia);
-  selOcorr(ocorr?ocorr.ocorrencia:'normal');
-  TURNOS.forEach(t=>{
-    const r=regsArr.find(x=>x.tipo===t);
-    document.getElementById('ed-'+t).value=r?r.hora:'';
-  });
+  const arr=Object.values(dados);
+  const ocorr=arr.find(r=>r.ocorrencia);
+  ocorrSel=ocorr?ocorr.ocorrencia:'normal';
+  document.querySelectorAll('.ocorr-btn').forEach(b=>{b.classList.toggle('sel',b.dataset.ocorr===ocorrSel);});
+  document.getElementById('horarios-section').style.display=ocorrSel==='normal'?'block':'none';
+  TURNOS.forEach(t=>{const r=arr.find(x=>x.tipo===t);document.getElementById('ed-'+t).value=r?r.hora:'';});
 }
-window.abrirEdicao=abrirEdicao;
-window.carregarDadosModal=carregarDadosModal;
-window.editCtx=editCtx;
 
 async function salvarEdicao(){
   const obs=document.getElementById('ed-obs').value.trim();
-  if(!obs){alert('Informe o motivo.');return;}
+  if(!obs){alert('Informe o motivo da alteração.');return;}
   const data=document.getElementById('ed-data').value||getHoje();
   const{lojaFB,lojaKey,vend}=editCtx;
-  const dk=fbDate(data);
-  const vk=vendFB(vend);
-  const basePath=`ponto/${lojaFB}/${dk}/${vk}`;
-  if(ocorrSel2!=='normal'){
-    // Ocorrência: apaga ponto e salva ocorrência
-    await db.ref(basePath));
-    await db.ref(basePath+'/ocorrencia').set({loja:lojaKey,vend,ocorrencia:ocorrSel2,data,editado:true,obs});
-    // Se for folga ou feriado, salva também na escala
-    if(ocorrSel2==='folga'||ocorrSel2==='feriado'){
-      await setEscalaDia(vend,data,ocorrSel2);
-    }
+  const basePath=`ponto/${lojaFB}/${fbDate(data)}/${vendFB(vend)}`;
+  if(ocorrSel!=='normal'){
+    await db.ref(basePath).remove();
+    await db.ref(basePath+'/ocorrencia').set({loja:lojaKey,vend,ocorrencia:ocorrSel,data,editado:true,obs});
+    if(ocorrSel==='folga'||ocorrSel==='feriado') await setEscalaDia(vend,data,ocorrSel);
   } else {
-    // Horário normal: busca dados existentes no Firebase e mescla
-    await db.ref(basePath+'/ocorrencia'));
-    const snapAtual = await db.ref(basePath));
-    const dadosAtuais = snapAtual.exists() ? snapAtual.val() : {};
+    await db.ref(basePath+'/ocorrencia').remove();
+    const snap=await db.ref(basePath).once('value');
+    const dadosAtuais=snap.exists()?snap.val():{};
     for(const t of TURNOS){
       const val=document.getElementById('ed-'+t).value;
       if(val){
-        // Campo preenchido no modal — atualiza
         await db.ref(`${basePath}/${t}`).set({loja:lojaKey,vend,tipo:t,hora:val,data,editado:true,obs});
       } else if(dadosAtuais[t]){
-        // Campo vazio no modal mas existe no Firebase — preserva com a obs de edição
         await db.ref(`${basePath}/${t}`).set({...dadosAtuais[t],editado:true,obs});
       }
-      // Se não há nada no modal nem no Firebase, não faz nada
     }
   }
-  await db.ref(`log/${fbDate(getHoje())}`).push({hora:getNow(),vend,loja:lojaKey,ocorr:ocorrSel2,obs,data,ts:Date.now()});
+  await db.ref(`log/${fbDate(getHoje())}`).push({hora:getNow(),vend,loja:lojaKey,ocorr:ocorrSel,obs,data,ts:Date.now()});
   closeModal('modal-edit');
 }
-window.salvarEdicao=salvarEdicao;
 
-// ESCALA
-function getEscalaDia(vend,data){return _escala[vendFB(vend)+'_'+fbDate(data)]||'';}
-async function setEscalaDia(vend,data,val){
-  const key=vendFB(vend)+'_'+fbDate(data);
-  if(val) await db.ref('escala/'+key).set(val);
-  else await db.ref('escala/'+key));
-}
-
-function abrirCel(vend,data,lojaFB){
-  const diaSem=getDiaSemana(data);
-  const fechaDom=(lojaFB==='Azevedo_Sodre'||lojaFB==='Bioritmo')&&diaSem===0;
-  if(fechaDom) return;
-  celCtx={vend,data,lojaFB};
-  document.getElementById('cel-titulo').textContent=vend.split(' ')[0];
-  document.getElementById('cel-sub').textContent=new Date(data+'T12:00').toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long'});
-  openModal('modal-cel');
-}
-window.abrirCel=abrirCel;
-
-async function salvarCel(val){
-  if(!celCtx) return;
-  await setEscalaDia(celCtx.vend,celCtx.data,val);
-  closeModal('modal-cel');
-}
-window.salvarCel=salvarCel;
+// ===== ESCALA =====
+document.getElementById('btn-escala-prev').addEventListener('click',()=>{escalaMes--;if(escalaMes<0){escalaMes=11;escalaAno--;}renderEscala();});
+document.getElementById('btn-escala-next').addEventListener('click',()=>{escalaMes++;if(escalaMes>11){escalaMes=0;escalaAno++;}renderEscala();});
+document.getElementById('btn-export-mes').addEventListener('click',exportarExcelMes);
 
 function renderEscala(){
-  const ano=escalaAno,mes=escalaMes;
-  document.getElementById('escala-mes-titulo').textContent=MESES[mes]+' '+ano;
-  const dias=diasNoMes(ano,mes);
+  document.getElementById('escala-mes-titulo').textContent=MESES[escalaMes]+' '+escalaAno;
+  const dias=diasNoMes(escalaAno,escalaMes);
   const hoje=getHoje();
-  const feriados=_feriados;
   document.getElementById('escala-container').innerHTML=LOJAS_CFG.map(loja=>{
     const pessoas=getEquipePorLoja(loja.key);
     let thDias='<th class="nome-col">Vendedora</th>';
     for(let d=1;d<=dias;d++){
-      const data=`${ano}-${String(mes+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+      const data=`${escalaAno}-${String(escalaMes+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
       const ds=getDiaSemana(data);
-      const isFer=feriados[fbDate(data)];
+      const isFer=_feriados[fbDate(data)];
       thDias+=`<th style="${isFer?'background:#fff3e0;color:#e65c00':ds===0?'background:#fafafa;color:#ccc':''}">${DIAS_SEMANA[ds]}<br><strong>${d}</strong></th>`;
     }
     const rows=pessoas.map(p=>{
       let tds=`<td class="nome-td">${p.nome.split(' ').slice(0,2).join(' ')}</td>`;
       for(let d=1;d<=dias;d++){
-        const data=`${ano}-${String(mes+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+        const data=`${escalaAno}-${String(escalaMes+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
         const ds=getDiaSemana(data);
         const fechaDom=(loja.fb==='Azevedo_Sodre'||loja.fb==='Bioritmo')&&ds===0;
         const isHoje=data===hoje;
         const escala=getEscalaDia(p.nome,data);
         let conteudo='';
-        if(escala&&OCORR_INFO[escala]) conteudo=`<span class="${OCORR_INFO[escala].ec}">${escala==='falta-j'?'FJ':escala==='falta-i'?'FI':escala==='atestado'?'AT':escala==='ferias'?'FÉR':escala==='licenca'?'LIC':escala==='folga'?'FL':escala==='feriado'?'FER':escala==='atestado'?'AT':escala==='ferias'?'FÉR':escala==='licenca'?'LIC':escala==='falta-j'?'FJ':escala==='falta-i'?'FI':''}</span>`;
+        if(escala&&OCORR_INFO[escala]) conteudo=`<span class="${OCORR_INFO[escala].ec}">${escala==='falta-j'?'FJ':escala==='falta-i'?'FI':escala==='atestado'?'AT':escala==='ferias'?'FÉR':escala==='licenca'?'LIC':escala==='folga'?'FL':escala==='feriado'?'FER':''}</span>`;
         else if(fechaDom) conteudo='<span style="color:#eee">—</span>';
         else conteudo='<span class="ec-trab">—</span>';
-        tds+=`<td style="${isHoje?'background:#fff9e0;':''}" onclick="abrirCel('${p.nome}','${data}','${loja.fb}')">${conteudo}</td>`;
+        tds+=`<td style="${isHoje?'background:#fff9e0;':''}" data-vend="${p.nome}" data-data="${data}" data-loja="${loja.fb}">${conteudo}</td>`;
       }
       return`<tr>${tds}</tr>`;
     }).join('');
     return`<div class="escala-loja-sec"><div class="escala-loja-hdr">${loja.nome}</div><div class="escala-table-wrap"><table class="escala-table"><thead><tr>${thDias}</tr></thead><tbody>${rows}</tbody></table></div></div>`;
   }).join('');
+
+  // Listeners células escala
+  document.querySelectorAll('.escala-table td[data-vend]').forEach(td=>{
+    td.addEventListener('click',()=>{
+      const ds=getDiaSemana(td.dataset.data);
+      const fechaDom=(td.dataset.loja==='Azevedo_Sodre'||td.dataset.loja==='Bioritmo')&&ds===0;
+      if(fechaDom) return;
+      celCtx={vend:td.dataset.vend,data:td.dataset.data,lojaFB:td.dataset.loja};
+      document.getElementById('cel-titulo').textContent=td.dataset.vend.split(' ').slice(0,2).join(' ');
+      document.getElementById('cel-sub').textContent=new Date(td.dataset.data+'T12:00').toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long'});
+      openModal('modal-cel');
+    });
+  });
 }
 
-function mudarMes(dir){escalaMes+=dir;if(escalaMes>11){escalaMes=0;escalaAno++;}if(escalaMes<0){escalaMes=11;escalaAno--;}renderEscala();}
-window.mudarMes=mudarMes;
+// Célula escala
+document.querySelectorAll('.cel-opt').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    if(!celCtx) return;
+    setEscalaDia(celCtx.vend,celCtx.data,btn.dataset.cel);
+    closeModal('modal-cel');
+  });
+});
+document.getElementById('btn-cancel-cel').addEventListener('click',()=>closeModal('modal-cel'));
 
-// BANCO DE HORAS
+// ===== BANCO DE HORAS =====
+document.getElementById('btn-banco-prev').addEventListener('click',()=>{bancoMes--;if(bancoMes<0){bancoMes=11;bancoAno--;}renderBanco();});
+document.getElementById('btn-banco-next').addEventListener('click',()=>{bancoMes++;if(bancoMes>11){bancoMes=0;bancoAno++;}renderBanco();});
+
 async function calcBancoMes(vend,lojaFB,ano,mes){
   const dias=diasNoMes(ano,mes);
   let totalTrab=0,totalPrev=0,diasTrab=0,folgas=0,atestados=0,faltasJ=0,faltasI=0,ferias=0,licencas=0;
@@ -824,108 +875,57 @@ async function calcBancoMes(vend,lojaFB,ano,mes){
     if(escala==='falta-i'){faltasI++;totalPrev+=7*60+20;continue;}
     if(escala==='ferias'){ferias++;continue;}
     if(escala==='licenca'){licencas++;continue;}
-    // Feriado na escala individual
-    if(escala==='feriado'){
-      if(lojaFB==='Azevedo_Sodre'){folgas++;continue;} // Azevedo não abre
-      // Bioritmo e shoppings: conta como dia trabalhado com horário especial
-    }
+    if(escala==='feriado'){if(lojaFB==='Azevedo_Sodre'){folgas++;continue;}}
     if(fechaDom) continue;
     if(ds===0&&!escala) continue;
     const regs=getVendRegs(lojaFB,vend,data);
     const h=calcHoras(regs,lojaFB,data,vend);
     if(h){totalTrab+=h.trabalhado;totalPrev+=h.previsto;diasTrab++;}
   }
-  const banco=totalTrab-totalPrev;
-  return{diasTrab,folgas,atestados,faltasJ,faltasI,ferias,licencas,totalTrabStr:minsToStr(totalTrab),totalPrevStr:minsToStr(totalPrev),banco,bancoStr:minsToStr(banco,true)};
+  return{diasTrab,folgas,atestados,faltasJ,faltasI,ferias,licencas,totalTrabStr:minsToStr(totalTrab)||'—',totalPrevStr:minsToStr(totalPrev)||'—',banco:totalTrab-totalPrev,bancoStr:minsToStr(totalTrab-totalPrev,true)||'—'};
 }
 
 async function renderBanco(){
-  const ano=bancoAno,mes=bancoMes;
-  document.getElementById('banco-mes-titulo').textContent=MESES[mes]+' '+ano;
+  document.getElementById('banco-mes-titulo').textContent=MESES[bancoMes]+' '+bancoAno;
   const lojasFilt=filtroBanco==='Todas'?LOJAS_CFG:LOJAS_CFG.filter(l=>l.nome.includes(filtroBanco)||l.fb.includes(filtroBanco));
   const htmls=await Promise.all(lojasFilt.map(async loja=>{
     const pessoas=getEquipePorLoja(loja.key);
     const rows=await Promise.all(pessoas.map(async p=>{
-      const b=await calcBancoMes(p.nome,loja.fb,ano,mes);
+      const b=await calcBancoMes(p.nome,loja.fb,bancoAno,bancoMes);
       const cls=b.banco>0?'banco-pos':b.banco<0?'banco-neg':'';
-      return`<tr><td>${p.nome.split(' ').slice(0,2).join(' ')}</td><td style="text-align:center">${p.cargo}</td><td style="text-align:center">${b.diasTrab}</td><td style="text-align:center">${b.folgas}</td><td style="text-align:center">${b.atestados}</td><td style="text-align:center">${b.faltasJ}</td><td style="text-align:center">${b.faltasI}</td><td style="text-align:center">${b.ferias}</td><td style="text-align:center">${b.totalTrabStr||'—'}</td><td style="text-align:center">${b.totalPrevStr||'—'}</td><td style="text-align:center" class="${cls}">${b.bancoStr||'—'}</td></tr>`;
+      return`<tr><td>${p.nome.split(' ').slice(0,2).join(' ')}</td><td style="text-align:center">${p.cargo}</td><td style="text-align:center">${b.diasTrab}</td><td style="text-align:center">${b.folgas}</td><td style="text-align:center">${b.atestados}</td><td style="text-align:center">${b.faltasJ}</td><td style="text-align:center">${b.faltasI}</td><td style="text-align:center">${b.ferias}</td><td style="text-align:center">${b.totalTrabStr}</td><td style="text-align:center">${b.totalPrevStr}</td><td style="text-align:center" class="${cls}">${b.bancoStr}</td></tr>`;
     }));
-    return`<div class="loja-sec" style="margin-bottom:14px"><div class="loja-hdr"><span class="loja-nome">${loja.nome}</span></div><div style="overflow-x:auto"><table class="banco-table"><thead><tr><th>Nome</th><th>Cargo</th><th>Dias</th><th>Folgas</th><th>Atestados</th><th>Falta J.</th><th>Falta I.</th><th>Férias</th><th>H.Trabalhadas</th><th>H.Previstas</th><th>Banco</th></tr></thead><tbody>${rows.join('')}</tbody></table></div></div>`;
+    return`<div class="loja-sec" style="margin-bottom:14px"><div class="loja-hdr"><span class="loja-nome">${loja.nome}</span></div><div style="overflow-x:auto"><table class="banco-table"><thead><tr><th>Nome</th><th>Cargo</th><th>Dias</th><th>Folgas</th><th>Ates.</th><th>Falta J.</th><th>Falta I.</th><th>Férias</th><th>H.Trab.</th><th>H.Prev.</th><th>Banco</th></tr></thead><tbody>${rows.join('')}</tbody></table></div></div>`;
   }));
   document.getElementById('banco-container').innerHTML=htmls.join('');
 }
 
-function mudarMesBanco(dir){bancoMes+=dir;if(bancoMes>11){bancoMes=0;bancoAno++;}if(bancoMes<0){bancoMes=11;bancoAno--;}renderBanco();}
-function setFiltroBanco(f,btn){filtroBanco=f;document.querySelectorAll('#tabs-banco .tab').forEach(t=>t.classList.remove('active'));btn.classList.add('active');renderBanco();}
-window.mudarMesBanco=mudarMesBanco; window.setFiltroBanco=setFiltroBanco;
+// ===== LOG =====
+document.getElementById('btn-log-hoje').addEventListener('click',()=>{document.getElementById('log-data-input').value=getHoje();renderLog();});
+document.getElementById('btn-log-prev').addEventListener('click',()=>{
+  const inp=document.getElementById('log-data-input');
+  const d=new Date((inp.value||getHoje())+'T12:00');d.setDate(d.getDate()-1);inp.value=d.toISOString().slice(0,10);renderLog();
+});
+document.getElementById('btn-log-next').addEventListener('click',()=>{
+  const inp=document.getElementById('log-data-input');
+  const d=new Date((inp.value||getHoje())+'T12:00');d.setDate(d.getDate()+1);
+  if(d.toISOString().slice(0,10)>getHoje()) return;
+  inp.value=d.toISOString().slice(0,10);renderLog();
+});
+document.getElementById('log-data-input').addEventListener('change',renderLog);
 
-// LOG
 function renderLog(){
   const inp=document.getElementById('log-data-input');
   if(!inp.value) inp.value=getHoje();
   const data=inp.value;
-  const dk=fbDate(data);
-  const log=_log[dk]?Object.values(_log[dk]):[];
+  const log=_log[fbDate(data)]?Object.values(_log[fbDate(data)]):[];
   const dateFmt=new Date(data+'T12:00').toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'2-digit',year:'numeric'});
   document.getElementById('log-container').innerHTML=`<div style="font-size:11px;color:#aaa;margin-bottom:8px">${dateFmt}</div>`+(log.length?log.slice().reverse().map(l=>`<div class="log-row"><span class="log-hora">${l.hora}</span><span><strong>${l.vend?.split(' ')[0]}</strong> (${l.loja?.split(' ')[0]})${l.ocorr&&l.ocorr!=='normal'?' — '+l.ocorr:''} — ${l.obs}</span></div>`).join(''):'<div style="font-size:12px;color:#aaa;padding:16px 0">Nenhuma alteração neste dia.</div>');
 }
-window.renderLog=renderLog;
-function logNav(dir){
-  const inp=document.getElementById('log-data-input');
-  const d=new Date((inp.value||getHoje())+'T12:00');
-  d.setDate(d.getDate()+dir);
-  if(d.toISOString().slice(0,10)>getHoje()) return;
-  inp.value=d.toISOString().slice(0,10);
-  renderLog();
-}
-window.logNav=logNav;
 
-// EQUIPE
-const EQUIPE_BASE=[
-  {nome:'André Luiz dos Anjos',cargo:'Vendedor',loja:'Praiamar Shopping',admissao:'',ativa:true},
-  {nome:'Izabelle Cristhina Coelho Chaves',cargo:'Vendedora',loja:'Praiamar Shopping',admissao:'',ativa:true},
-  {nome:'Mariana Araujo de Oliveira',cargo:'Vendedora',loja:'Praiamar Shopping',admissao:'',ativa:true},
-  {nome:'Rafaela Carvalho Santos',cargo:'Auxiliar de Loja',loja:'Praiamar Shopping',admissao:'',ativa:true},
-  {nome:'Bianca Gomes Moreno',cargo:'Vendedora',loja:'Praiamar Shopping',admissao:'',ativa:true},
-  {nome:'Daniele Miguel Ferreira',cargo:'Vendedora',loja:'Praiamar Shopping',admissao:'',ativa:true},
-  {nome:'Leticia Antunes da Silva',cargo:'Vendedora',loja:'Miramar Shopping',admissao:'',ativa:true},
-  {nome:'Mirella Macedo Di Renzo',cargo:'Vendedora',loja:'Miramar Shopping',admissao:'',ativa:true},
-  {nome:'Jessika Cristine Millan dos Santos',cargo:'Vendedora',loja:'Miramar Shopping',admissao:'',ativa:true},
-  {nome:'Aylla Barros dos Santos',cargo:'Auxiliar',loja:'Miramar Shopping',admissao:'',ativa:true},
-  {nome:'Mariela Parente de Toledo Piza',cargo:'Vendedora',loja:'Azevedo Sodré',admissao:'',ativa:true},
-  {nome:'Raisa Vigolo Chaves',cargo:'Vendedora',loja:'Azevedo Sodré',admissao:'',ativa:true},
-  {nome:'Debora Cristina Olimpio de Oliveira',cargo:'Vendedora',loja:'Azevedo Sodré',admissao:'',ativa:true},
-  {nome:'Tainã Reis da Costa',cargo:'Vendedora',loja:'Litoral Plaza',admissao:'',ativa:true},
-  {nome:'Weslayne Karen Nunes',cargo:'Vendedora',loja:'Litoral Plaza',admissao:'',ativa:true},
-  {nome:'Dayana Silva de Aguiar',cargo:'Vendedora',loja:'Litoral Plaza',admissao:'',ativa:true},
-  {nome:'Ana Barbara Bispo de Souza',cargo:'Vendedora',loja:'Litoral Plaza',admissao:'',ativa:true},
-  {nome:'Fernanda de Souza Rocha',cargo:'Vendedora',loja:'Bioritmo',admissao:'',ativa:true},
-  {nome:'Maria Eduarda Lisboa Silva',cargo:'Vendedora',loja:'Bioritmo',admissao:'',ativa:true},
-];
-
-async function initEquipe(){
-  const snap=await db.ref('equipe'));
-  if(!snap.exists()){
-    for(const p of EQUIPE_BASE){
-      await db.ref('equipe').set(p);
-    }
-  }
-}
-
-function getEquipePorLoja(lojaKey){
-  const hoje=getHoje();
-  const mesAtual=hoje.substring(0,7);
-  if(!_equipe.length) return LOJAS_CFG.find(l=>l.key===lojaKey)?.pessoas||[];
-  return _equipe.filter(p=>{
-    if(p.loja!==lojaKey) return false;
-    if(p.ativa) return true;
-    if(p.dataSaida){return p.dataSaida.substring(0,7)>=mesAtual;}
-    return false;
-  });
-}
-
-function abrirNovaVend(){
-  eqEditIdx=null;
+// ===== EQUIPE =====
+document.getElementById('btn-nova-vend').addEventListener('click',()=>{
+  eqEditKey=null;
   document.getElementById('eq-modal-titulo').textContent='Nova colaboradora';
   document.getElementById('eq-modal-sub').textContent='';
   document.getElementById('eq-nome').value='';
@@ -933,89 +933,50 @@ function abrirNovaVend(){
   document.getElementById('eq-loja').value='Praiamar Shopping';
   document.getElementById('eq-admissao').value=getHoje();
   openModal('modal-equipe');
-}
-window.abrirNovaVend=abrirNovaVend;
+});
+document.getElementById('btn-cancel-equipe').addEventListener('click',()=>closeModal('modal-equipe'));
+document.getElementById('btn-salvar-equipe').addEventListener('click',salvarEquipe);
 
-function abrirEditarVend(key){
-  const p=_equipe.find(x=>x._key===key);
-  if(!p) return;
-  eqEditIdx=key;
-  document.getElementById('eq-modal-titulo').textContent='Editar colaboradora';
-  document.getElementById('eq-modal-sub').textContent=p.nome;
-  document.getElementById('eq-nome').value=p.nome;
-  document.getElementById('eq-cargo').value=p.cargo;
-  document.getElementById('eq-loja').value=p.loja;
-  document.getElementById('eq-admissao').value=p.admissao||'';
-  openModal('modal-equipe');
-}
-window.abrirEditarVend=abrirEditarVend;
-
-async function salvarEquipeFB(){
+async function salvarEquipe(){
   const nome=document.getElementById('eq-nome').value.trim();
   if(!nome){alert('Informe o nome.');return;}
   const dados={nome,cargo:document.getElementById('eq-cargo').value,loja:document.getElementById('eq-loja').value,admissao:document.getElementById('eq-admissao').value,ativa:true};
-  if(eqEditIdx){await db.ref('equipe/'+eqEditIdx).set({..._equipe.find(x=>x._key===eqEditIdx),...dados,_key:undefined});}
-  else{await db.ref('equipe').set(dados);}
+  if(eqEditKey){
+    const p=_equipe.find(x=>x._key===eqEditKey);
+    await db.ref('equipe/'+eqEditKey).set({...p,...dados,_key:undefined});
+  } else {
+    await db.ref('equipe').push(dados);
+  }
   closeModal('modal-equipe');
 }
-window.salvarEquipeFB=salvarEquipeFB;
 
-function abrirDesativar(key){
-  desativarIdx=key;
-  const p=_equipe.find(x=>x._key===key);
-  document.getElementById('modal-desativar-content').innerHTML=`
-    <h3>🚫 Desativar colaboradora</h3>
-    <div class="modal-sub">${p.nome} — ${p.loja}</div>
-    <label class="field-label">Motivo</label>
-    <select class="field-select" id="desativar-motivo">
-      <option value="demissao">Demissão (sem justa causa)</option>
-      <option value="demissao-justa">Demissão por justa causa</option>
-      <option value="pedido">Pedido de demissão</option>
-      <option value="acordo">Acordo</option>
-      <option value="fim-contrato">Fim de contrato</option>
-    </select>
-    <label class="field-label">Data de saída</label>
-    <input type="date" class="field-input" id="desativar-data" value="${getHoje()}">
-    <label class="field-label">Observação</label>
-    <textarea class="field-textarea" id="desativar-obs"></textarea>
-    <div style="background:#fff8e1;border:1px solid #ffe082;border-radius:6px;padding:10px;font-size:11px;color:#7a5500;margin-top:12px">
-      ⚠️ Ficará visível como inativa até o fim do mês para fechamento da folha.
-    </div>
-    <div class="modal-btns">
-      <button class="btn-cancel" id="btn-cancel-desativar">Cancelar</button>
-      <button class="btn-save" style="background:#b83232" id="btn-confirmar-desativar">🚫 Desativar</button>
-    </div>`;
-  // Adicionar listeners nos botões recém criados
-  document.getElementById('btn-cancel-desativar').addEventListener('click',()=>closeModal('modal-desativar'));
-  document.getElementById('btn-confirmar-desativar').addEventListener('click', confirmarDesativarFB);
-  openModal('modal-desativar');
+async function initEquipe(){
+  const snap=await db.ref('equipe').once('value');
+  if(!snap.exists()){
+    const base=[
+      {nome:'André Luiz dos Anjos',cargo:'Vendedor',loja:'Praiamar Shopping',admissao:'',ativa:true},
+      {nome:'Izabelle Cristhina Coelho Chaves',cargo:'Vendedora',loja:'Praiamar Shopping',admissao:'',ativa:true},
+      {nome:'Mariana Araujo de Oliveira',cargo:'Vendedora',loja:'Praiamar Shopping',admissao:'',ativa:true},
+      {nome:'Rafaela Carvalho Santos',cargo:'Auxiliar de Loja',loja:'Praiamar Shopping',admissao:'',ativa:true},
+      {nome:'Bianca Gomes Moreno',cargo:'Vendedora',loja:'Praiamar Shopping',admissao:'',ativa:true},
+      {nome:'Daniele Miguel Ferreira',cargo:'Vendedora',loja:'Praiamar Shopping',admissao:'',ativa:true},
+      {nome:'Leticia Antunes da Silva',cargo:'Vendedora',loja:'Miramar Shopping',admissao:'',ativa:true},
+      {nome:'Mirella Macedo Di Renzo',cargo:'Vendedora',loja:'Miramar Shopping',admissao:'',ativa:true},
+      {nome:'Jessika Cristine Millan dos Santos',cargo:'Vendedora',loja:'Miramar Shopping',admissao:'',ativa:true},
+      {nome:'Aylla Barros dos Santos',cargo:'Auxiliar',loja:'Miramar Shopping',admissao:'',ativa:true},
+      {nome:'Mariela Parente de Toledo Piza',cargo:'Vendedora',loja:'Azevedo Sodré',admissao:'',ativa:true},
+      {nome:'Raisa Vigolo Chaves',cargo:'Vendedora',loja:'Azevedo Sodré',admissao:'',ativa:true},
+      {nome:'Debora Cristina Olimpio de Oliveira',cargo:'Vendedora',loja:'Azevedo Sodré',admissao:'',ativa:true},
+      {nome:'Tainã Reis da Costa',cargo:'Vendedora',loja:'Litoral Plaza',admissao:'',ativa:true},
+      {nome:'Weslayne Karen Nunes',cargo:'Vendedora',loja:'Litoral Plaza',admissao:'',ativa:true},
+      {nome:'Dayana Silva de Aguiar',cargo:'Vendedora',loja:'Litoral Plaza',admissao:'',ativa:true},
+      {nome:'Ana Barbara Bispo de Souza',cargo:'Vendedora',loja:'Litoral Plaza',admissao:'',ativa:true},
+      {nome:'Fernanda de Souza Rocha',cargo:'Vendedora',loja:'Bioritmo',admissao:'',ativa:true},
+      {nome:'Maria Eduarda Lisboa Silva',cargo:'Vendedora',loja:'Bioritmo',admissao:'',ativa:true},
+    ];
+    for(const p of base) await db.ref('equipe').push(p);
+  }
 }
-window.abrirDesativar=abrirDesativar;
-
-async function confirmarDesativarFB(){
-  const dataSaida=document.getElementById('desativar-data').value;
-  if(!dataSaida){alert('Informe a data de saída.');return;}
-  const p=_equipe.find(x=>x._key===desativarIdx);
-  await db.ref('equipe/'+desativarIdx).set({...p,ativa:false,motivo:document.getElementById('desativar-motivo').value,dataSaida,obsDesligamento:document.getElementById('desativar-obs').value,_key:undefined});
-  closeModal('modal-desativar');
-}
-window.confirmarDesativarFB=confirmarDesativarFB;
-
-// Listeners dos modais de equipe e desativar
-document.getElementById('btn-confirmar-desativar').addEventListener('click', confirmarDesativarFB);
-document.getElementById('btn-cancel-desativar').addEventListener('click', ()=>closeModal('modal-desativar'));
-document.getElementById('btn-salvar-equipe').addEventListener('click', salvarEquipeFB);
-document.getElementById('btn-cancel-equipe').addEventListener('click', ()=>closeModal('modal-equipe'));
-
-async function reativarVend(key){
-  if(!confirm('Reativar?')) return;
-  const p=_equipe.find(x=>x._key===key);
-  await db.ref('equipe/'+key).set({...p,ativa:true,motivo:null,dataSaida:null,obsDesligamento:null,_key:undefined});
-}
-window.reativarVend=reativarVend;
-
-const MOTIVO_LABEL={'demissao':'Demissão s/ justa causa','demissao-justa':'Demissão c/ justa causa','pedido':'Pedido de demissão','acordo':'Acordo','fim-contrato':'Fim de contrato'};
-const LOJAS_NOMES=['Praiamar Shopping','Miramar Shopping','Azevedo Sodré','Litoral Plaza','Bioritmo'];
 
 function renderEquipe(){
   document.getElementById('equipe-container').innerHTML=LOJAS_NOMES.map(loja=>{
@@ -1024,141 +985,126 @@ function renderEquipe(){
     const inativas=pessoas.filter(p=>!p.ativa);
     const rows=[...ativas,...inativas].map(p=>{
       const statusHtml=p.ativa?'<span class="eq-ativa">Ativa</span>':`<span class="eq-inativa">Inativa — ${MOTIVO_LABEL[p.motivo]||p.motivo||''}${p.dataSaida?' · '+new Date(p.dataSaida+'T12:00').toLocaleDateString('pt-BR'):''}</span>`;
-      const btns=p.ativa?`<div class="eq-actions"><button class="eq-btn" onclick="abrirEditarVend('${p._key}')">✏️</button><button class="eq-btn eq-btn-danger" onclick="abrirDesativar('${p._key}')">🚫</button></div>`:`<div class="eq-actions"><button class="eq-btn eq-btn-success" onclick="reativarVend('${p._key}')">✅</button></div>`;
+      const btns=p.ativa
+        ?`<div class="eq-actions"><button class="eq-btn" data-edit-key="${p._key}">✏️</button><button class="eq-btn eq-btn-danger" data-desativar-key="${p._key}">🚫</button></div>`
+        :`<div class="eq-actions"><button class="eq-btn eq-btn-success" data-reativar-key="${p._key}">✅</button></div>`;
       return`<div class="equipe-row${p.ativa?'':' eq-inativa-row'}"><div><div class="eq-nome">${p.nome}${!p.ativa?'<span class="eq-demit-badge">Inativa</span>':''}</div><div class="eq-cargo">${p.cargo}</div><div class="eq-status">${statusHtml}</div></div>${btns}</div>`;
     }).join('');
-    return`<div class="equipe-loja-sec"><div class="equipe-loja-hdr"><span class="equipe-loja-titulo">${loja}</span><div style="display:flex;align-items:center;gap:10px"><span style="font-size:11px;opacity:.7">${ativas.length} ativas</span><button class="equipe-add-btn" onclick="abrirNovaVend();document.getElementById('eq-loja').value='${loja}'">+ Add</button></div></div>${rows||'<div style="padding:14px;text-align:center;font-size:12px;color:#aaa">Nenhuma cadastrada</div>'}</div>`;
+    return`<div class="equipe-loja-sec"><div class="equipe-loja-hdr"><span class="equipe-loja-titulo">${loja}</span><div style="display:flex;align-items:center;gap:10px"><span style="font-size:11px;opacity:.7">${ativas.length} ativas</span></div></div>${rows||'<div style="padding:14px;text-align:center;font-size:12px;color:#aaa">Nenhuma cadastrada</div>'}</div>`;
   }).join('');
-}
 
-// DETALHE STATS
-function abrirDetalhe(tipo){
-  const todos = window._statTodos || [];
-  let titulo='', itens=[];
-
-  if(tipo==='registraram'){
-    titulo='📋 Registraram hoje';
-    itens=todos.filter(p=>p.regs.length>0).map(p=>({
-      nome:p.nome, info:'Entrou: '+(p.regs.find(r=>r.tipo==='entrada')?.hora||'—'), loja:p.loja
-    }));
-  }
-  else if(tipo==='naloja'){
-    titulo='🏪 Na loja agora';
-    itens=todos.filter(p=>p.regs.find(r=>r.tipo==='entrada')&&!p.regs.find(r=>r.tipo==='saida')&&!p.regs.find(r=>r.ocorrencia)).map(p=>({
-      nome:p.nome, info:'Entrada: '+(p.regs.find(r=>r.tipo==='entrada')?.hora||'—'), loja:p.loja
-    }));
-  }
-  else if(tipo==='almoco'){
-    titulo='🍽️ Em almoço agora';
-    itens=todos.filter(p=>p.regs.find(r=>r.tipo==='saida_almoco')&&!p.regs.find(r=>r.tipo==='retorno_almoco')).map(p=>({
-      nome:p.nome, info:'Saiu: '+(p.regs.find(r=>r.tipo==='saida_almoco')?.hora||'—'), loja:p.loja
-    }));
-  }
-  else if(tipo==='completos'){
-    titulo='✅ Turno completo';
-    itens=todos.filter(p=>['entrada','saida_almoco','retorno_almoco','saida'].every(t=>p.regs.find(r=>r.tipo===t))).map(p=>{
-      const h=calcHoras(p.regs,p.lojaFB,getHoje(),p.nome);
-      return{nome:p.nome, info:h?`${h.trabalhadoStr} trabalhadas · ${h.extraStr}`:'—', loja:p.loja};
+  // Listeners equipe
+  document.querySelectorAll('[data-edit-key]').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      const p=_equipe.find(x=>x._key===btn.dataset.editKey);
+      if(!p) return;
+      eqEditKey=p._key;
+      document.getElementById('eq-modal-titulo').textContent='Editar colaboradora';
+      document.getElementById('eq-modal-sub').textContent=p.nome;
+      document.getElementById('eq-nome').value=p.nome;
+      document.getElementById('eq-cargo').value=p.cargo;
+      document.getElementById('eq-loja').value=p.loja;
+      document.getElementById('eq-admissao').value=p.admissao||'';
+      openModal('modal-equipe');
     });
-  }
-  else if(tipo==='ocorrencias'){
-    titulo='📋 Ocorrências do dia';
-    const OCORR_LABELS={folga:'🌴 Folga','atestado':'🏥 Atestado','falta-j':'⚠️ Falta justif.','falta-i':'❌ Falta injustif.',ferias:'🏖️ Férias',licenca:'🤰 Licença',outro:'📋 Outro'};
-    itens=todos.filter(p=>p.regs.find(r=>r.ocorrencia)).map(p=>{
-      const ocorr=p.regs.find(r=>r.ocorrencia);
-      return{nome:p.nome, info:OCORR_LABELS[ocorr.ocorrencia]||ocorr.ocorrencia, loja:p.loja};
+  });
+  document.querySelectorAll('[data-desativar-key]').forEach(btn=>{
+    btn.addEventListener('click',()=>abrirDesativar(btn.dataset.desativarKey));
+  });
+  document.querySelectorAll('[data-reativar-key]').forEach(btn=>{
+    btn.addEventListener('click',async()=>{
+      if(!confirm('Reativar esta colaboradora?')) return;
+      const p=_equipe.find(x=>x._key===btn.dataset.reativarKey);
+      await db.ref('equipe/'+p._key).set({...p,ativa:true,motivo:null,dataSaida:null,obsDesligamento:null,_key:undefined});
     });
-  }
-
-  else if(tipo==='folgas'){
-    titulo='🌴 De folga ou feriado hoje';
-    itens=todos.filter(p=>{
-      const esc=getEscalaDia(p.nome,getHoje());
-      return esc==='folga'||esc==='feriado';
-    }).map(p=>{
-      const esc=getEscalaDia(p.nome,getHoje());
-      return{nome:p.nome, info:esc==='feriado'?'🎉 Feriado':'🌴 Folga', loja:p.loja};
-    });
-  }
-
-  document.getElementById('detalhe-titulo').textContent=titulo;
-  document.getElementById('detalhe-lista').innerHTML=itens.length
-    ?itens.map(i=>`<div class="detalhe-row"><div><div class="detalhe-nome">${i.nome.split(' ').slice(0,2).join(' ')}</div><span class="detalhe-loja">${i.loja}</span></div><div class="detalhe-info">${i.info}</div></div>`).join('')
-    :'<div class="detalhe-vazio">Nenhuma pessoa nesta categoria.</div>';
-  openModal('modal-detalhe');
+  });
 }
 
-// NAV
-function setNavTab(aba,btn){
-  abaAtiva=aba;
-  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
-  btn.classList.add('active');
-  ['hoje','escala','banco','log','equipe'].forEach(a=>document.getElementById('aba-'+a).style.display=a===aba?'block':'none');
-  if(aba==='hoje') renderHoje();
-  if(aba==='escala') renderEscala();
-  if(aba==='banco') renderBanco();
-  if(aba==='log') renderLog();
-  if(aba==='equipe') renderEquipe();
+function abrirDesativar(key){
+  desativarKey=key;
+  const p=_equipe.find(x=>x._key===key);
+  const modal=document.createElement('div');
+  modal.className='modal-overlay open';
+  modal.id='modal-desativar-temp';
+  modal.innerHTML=`<div class="modal" style="width:380px">
+    <h3>🚫 Desativar colaboradora</h3>
+    <div class="modal-sub">${p.nome} — ${p.loja}</div>
+    <label class="field-label">Motivo</label>
+    <select class="field-select" id="des-motivo">
+      <option value="demissao">Demissão (sem justa causa)</option>
+      <option value="demissao-justa">Demissão por justa causa</option>
+      <option value="pedido">Pedido de demissão</option>
+      <option value="acordo">Acordo</option>
+      <option value="fim-contrato">Fim de contrato</option>
+    </select>
+    <label class="field-label">Data de saída</label>
+    <input type="date" class="field-input" id="des-data" value="${getHoje()}">
+    <label class="field-label">Observação</label>
+    <textarea class="field-textarea" id="des-obs"></textarea>
+    <div style="background:#fff8e1;border:1px solid #ffe082;border-radius:6px;padding:10px;font-size:11px;color:#7a5500;margin-top:12px">
+      ⚠️ Ficará visível como inativa até o fim do mês para fechamento da folha.
+    </div>
+    <div class="modal-btns">
+      <button class="btn-cancel" id="des-cancelar">Cancelar</button>
+      <button class="btn-save" style="background:#b83232" id="des-confirmar">🚫 Desativar</button>
+    </div>
+  </div>`;
+  document.body.appendChild(modal);
+  document.getElementById('des-cancelar').addEventListener('click',()=>modal.remove());
+  document.getElementById('des-confirmar').addEventListener('click',async()=>{
+    const dataSaida=document.getElementById('des-data').value;
+    if(!dataSaida){alert('Informe a data de saída.');return;}
+    const motivo=document.getElementById('des-motivo').value;
+    const obs=document.getElementById('des-obs').value;
+    const pAtual=_equipe.find(x=>x._key===desativarKey);
+    await db.ref('equipe/'+desativarKey).set({...pAtual,ativa:false,motivo,dataSaida,obsDesligamento:obs,_key:undefined});
+    modal.remove();
+  });
 }
-window.setNavTab=setNavTab;
-function navDia(dir){
-  const inp=document.getElementById('hoje-data-input');
-  const d=new Date((inp.value||getHoje())+'T12:00');
-  d.setDate(d.getDate()+dir);
-  const nova=d.toISOString().slice(0,10);
-  inp.value=nova;
-  renderHoje();
-}
-window.navDia=navDia;
 
-function setFiltro(f,btn){filtro=f;document.querySelectorAll('#aba-hoje .tab').forEach(t=>t.classList.remove('active'));btn.classList.add('active');renderHoje();}
-window.setFiltro=setFiltro;
+// ===== CLOCK =====
+function updateClock(){document.getElementById('g-hora').textContent=getNow();document.getElementById('g-data').textContent=getDataFmt();}
+setInterval(updateClock,1000);
+document.getElementById('senha-input').focus();
 
-// EXPORTAR
+// ===== EXPORTAR =====
 function exportarExcelDia(){
+  const hoje=document.getElementById('hoje-data-input').value||getHoje();
   const wb=XLSX.utils.book_new();
   LOJAS_CFG.forEach(loja=>{
     const pessoas=getEquipePorLoja(loja.key);
-    const rows=[['Nome','Cargo','Tipo','Entrada','Saída Almoço','Retorno Almoço','Saída','H.Trabalhadas','H.Previstas','Extra/Falta','Turno','Editado']];
+    const rows=[['Nome','Cargo','Tipo','Entrada','Saída Almoço','Retorno Almoço','Saída','H.Trabalhadas','Extra/Falta']];
     pessoas.forEach(p=>{
       const regs=getVendRegs(loja.fb,p.nome,hoje);
       const ocorr=regs.find(r=>r.ocorrencia);
-      if(ocorr){rows.push([p.nome,p.cargo,OCORR_INFO[ocorr.ocorrencia]?.l||ocorr.ocorrencia,'—','—','—','—','—','—','—','—',ocorr.editado?'Sim':'Não']);}
+      if(ocorr){rows.push([p.nome,p.cargo,OCORR_INFO[ocorr.ocorrencia]?.l||ocorr.ocorrencia,'—','—','—','—','—','—']);}
       else{
         const e=regs.find(r=>r.tipo==='entrada');
         const sa=regs.find(r=>r.tipo==='saida_almoco');
         const ra=regs.find(r=>r.tipo==='retorno_almoco');
         const s=regs.find(r=>r.tipo==='saida');
         const h=calcHoras(regs,loja.fb,hoje,p.nome);
-        rows.push([p.nome,p.cargo,'Normal',e?e.hora:'—',sa?sa.hora:'—',ra?ra.hora:'—',s?s.hora:'—',h?h.trabalhadoStr:'—',h?h.prevStr:'—',h?h.extraStr:'—',h?h.turnoLabel:'—',regs.some(r=>r.editado)?'Sim':'Não']);
+        rows.push([p.nome,p.cargo,'Normal',e?e.hora:'—',sa?sa.hora:'—',ra?ra.hora:'—',s?s.hora:'—',h?h.trabalhadoStr:'—',h?h.extraStr:'—']);
       }
     });
     XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rows),loja.nome.substring(0,31));
   });
-  XLSX.writeFile(wb,'Ponto_LIVE_'+getHoje()+'.xlsx');
+  XLSX.writeFile(wb,'Ponto_LIVE_'+hoje+'.xlsx');
 }
-window.exportarExcelDia=exportarExcelDia;
 
 async function exportarExcelMes(){
   const wb=XLSX.utils.book_new();
-  const ano=escalaAno,mes=escalaMes;
   for(const loja of LOJAS_CFG){
     const pessoas=getEquipePorLoja(loja.key);
-    const rows=[['Nome','Cargo','Dias Trab.','Folgas','Atestados','Falta Just.','Falta Injust.','Férias','Licença','H.Trabalhadas','H.Previstas','Banco']];
+    const rows=[['Nome','Cargo','Dias Trab.','Folgas','Atestados','Falta Just.','Falta Injust.','Férias','H.Trabalhadas','H.Previstas','Banco']];
     for(const p of pessoas){
-      const b=await calcBancoMes(p.nome,loja.fb,ano,mes);
-      rows.push([p.nome,p.cargo,b.diasTrab,b.folgas,b.atestados,b.faltasJ,b.faltasI,b.ferias,b.licencas,b.totalTrabStr||'—',b.totalPrevStr||'—',b.bancoStr||'—']);
+      const b=await calcBancoMes(p.nome,loja.fb,escalaAno,escalaMes);
+      rows.push([p.nome,p.cargo,b.diasTrab,b.folgas,b.atestados,b.faltasJ,b.faltasI,b.ferias,b.totalTrabStr,b.totalPrevStr,b.bancoStr]);
     }
     XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rows),loja.nome.substring(0,31));
   }
-  XLSX.writeFile(wb,'Banco_LIVE_'+MESES[mes]+'_'+ano+'.xlsx');
+  XLSX.writeFile(wb,'Banco_LIVE_'+MESES[escalaMes]+'_'+escalaAno+'.xlsx');
 }
-window.exportarExcelMes=exportarExcelMes;
-
-// CLOCK
-function updateClock(){document.getElementById('g-hora').textContent=getNow();document.getElementById('g-data').textContent=getDataFmt();}
-setInterval(updateClock,1000);
-document.getElementById('senha-input').focus();
 </script>
 </body>
 </html>
