@@ -697,11 +697,13 @@ function selOcorr(tipo){
 window.selOcorr=selOcorr;
 
 function abrirEdicao(lojaFB,lojaKey,vend){
-  const regs=getVendRegs(lojaFB,vend);
+  // Pega a data atual selecionada na aba Hoje
+  const dataAtual=document.getElementById('hoje-data-input')?.value||getHoje();
+  const regs=getVendRegs(lojaFB,vend,dataAtual);
   editCtx={lojaFB,lojaKey,vend};
   document.getElementById('modal-titulo').textContent='✏️ '+vend.split(' ')[0];
   document.getElementById('modal-sub').textContent=lojaKey;
-  document.getElementById('ed-data').value=getHoje();
+  document.getElementById('ed-data').value=dataAtual;
   const ocorr=regs.find(r=>r.ocorrencia);
   selOcorr(ocorr?ocorr.ocorrencia:'normal');
   TURNOS.forEach(t=>{const r=regs.find(x=>x.tipo===t);document.getElementById('ed-'+t).value=r?r.hora:'';});
@@ -718,18 +720,25 @@ async function salvarEdicao(){
   const dk=fbDate(data);
   const vk=vendFB(vend);
   const basePath=`ponto/${lojaFB}/${dk}/${vk}`;
-  await remove(ref(db,basePath));
   if(ocorrSel2!=='normal'){
+    // Ocorrência: apaga ponto e salva ocorrência
+    await remove(ref(db,basePath));
     await set(ref(db,basePath+'/ocorrencia'),{loja:lojaKey,vend,ocorrencia:ocorrSel2,data,editado:true,obs});
-    // Se for folga ou feriado, salva também na escala para aparecer no card correto
+    // Se for folga ou feriado, salva também na escala
     if(ocorrSel2==='folga'||ocorrSel2==='feriado'){
       await setEscalaDia(vend,data,ocorrSel2);
     }
   } else {
-    const turnos=TURNOS;
-    for(const t of turnos){
+    // Horário normal: mescla com o que já existe — só atualiza os campos preenchidos
+    // Remove ocorrência se havia uma antes
+    await remove(ref(db,basePath+'/ocorrencia'));
+    for(const t of TURNOS){
       const val=document.getElementById('ed-'+t).value;
-      if(val) await set(ref(db,`${basePath}/${t}`),{loja:lojaKey,vend,tipo:t,hora:val,data,editado:true,obs});
+      if(val){
+        // Atualiza ou cria o registro deste turno
+        await set(ref(db,`${basePath}/${t}`),{loja:lojaKey,vend,tipo:t,hora:val,data,editado:true,obs});
+      }
+      // Se o campo está vazio, mantém o que já existe no Firebase (não apaga)
     }
   }
   await push(ref(db,`log/${fbDate(getHoje())}`),{hora:getNow(),vend,loja:lojaKey,ocorr:ocorrSel2,obs,data,ts:Date.now()});
