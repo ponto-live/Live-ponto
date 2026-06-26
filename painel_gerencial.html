@@ -252,8 +252,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <label class="field-label">Data de admissão</label>
     <input type="date" class="field-input" id="eq-admissao">
     <div class="modal-btns">
-      <button class="btn-cancel" id="btn-cancel-equipe">Cancelar</button>
-      <button class="btn-save" id="btn-salvar-equipe">💾 Salvar</button>
+      <button class="btn-cancel" id="btn-cancel-equipe" onclick="window.closeModal('modal-equipe')">Cancelar</button>
+      <button class="btn-save" id="btn-salvar-equipe" onclick="window.salvarEquipeFB()">💾 Salvar</button>
     </div>
   </div>
 </div>
@@ -279,8 +279,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       ⚠️ Ficará visível como inativa até o fim do mês para fechamento da folha.
     </div>
     <div class="modal-btns">
-      <button class="btn-cancel" id="btn-cancel-desativar">Cancelar</button>
-      <button class="btn-save" style="background:#b83232" id="btn-confirmar-desativar">🚫 Desativar</button>
+      <button class="btn-cancel" id="btn-cancel-desativar" onclick="window.closeModal('modal-desativar')">Cancelar</button>
+      <button class="btn-save" style="background:#b83232" id="btn-confirmar-desativar" onclick="window.confirmarDesativarFB()">🚫 Desativar</button>
     </div>
   </div>
 </div>
