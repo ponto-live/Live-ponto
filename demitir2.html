@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head><meta charset="UTF-8"><title>Desativar</title>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<style>
+body{font-family:sans-serif;background:#1a1a1a;color:#f0c000;padding:20px;margin:0}
+.box{background:#222;border-radius:12px;padding:20px;max-width:500px;margin:0 auto}
+h2{margin-bottom:16px;font-size:16px}
+.item{background:#333;border-radius:8px;padding:12px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center}
+.item-nome{font-size:13px}
+.item-info{font-size:11px;color:#aaa;margin-top:3px}
+.btn-dem{padding:8px 14px;background:#b83232;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600}
+.btn-dem:disabled{opacity:.4;cursor:default}
+.log{margin-top:16px;font-size:11px;color:#aaa;background:#111;border-radius:8px;padding:12px;min-height:60px}
+</style>
+</head>
+<body>
+<div class="box">
+  <h2>🚫 Desativar colaboradoras</h2>
+  <div class="item">
+    <div>
+      <div class="item-nome">Ana Barbara Bispo de Souza</div>
+      <div class="item-info">Litoral Plaza · Demissão · Saída: 18/06/2026</div>
+    </div>
+    <button class="btn-dem" id="btn-ana">Desativar</button>
+  </div>
+  <div class="item">
+    <div>
+      <div class="item-nome">Karina Santos</div>
+      <div class="item-info">Litoral Plaza · Desistiu de começar · Saída: 18/06/2026</div>
+    </div>
+    <button class="btn-dem" id="btn-karina">Desativar</button>
+  </div>
+  <div class="log" id="log">Aguardando...</div>
+</div>
+<script>
+firebase.initializeApp({
+  apiKey:"AIzaSyB9LxMVbD6opFjrp5Q1icRmVeOg2M_8aJM",
+  authDomain:"live-ponto.firebaseapp.com",
+  databaseURL:"https://live-ponto-default-rtdb.firebaseio.com",
+  projectId:"live-ponto",
+  storageBucket:"live-ponto.appspot.com",
+  messagingSenderId:"396456789012",
+  appId:"1:396456789012:web:live-ponto"
+});
+const db = firebase.database();
+const log = document.getElementById('log');
+
+function addLog(msg){ log.innerHTML += msg + '<br>'; }
+
+async function desativar(nomeBusca, nomeCompleto, loja, motivo, obs, btnId){
+  const btn = document.getElementById(btnId);
+  btn.disabled = true;
+  btn.textContent = '...';
+  addLog('Buscando ' + nomeCompleto + '...');
+  
+  const snap = await db.ref('equipe').once('value');
+  const equipe = snap.val() || {};
+  
+  let key = null;
+  for(const [k,v] of Object.entries(equipe)){
+    if(v.nome && v.nome.toLowerCase().includes(nomeBusca.toLowerCase())){
+      key = k;
+      addLog('Encontrado: ' + v.nome + ' (key: ' + k + ')');
+      break;
+    }
+  }
+  
+  if(!key){
+    // Não encontrou — cadastra como nova já inativa
+    addLog('Não encontrado no Firebase. Cadastrando como inativa...');
+    await db.ref('equipe').push({
+      nome: nomeCompleto,
+      cargo: 'Vendedora',
+      loja: loja,
+      admissao: '',
+      ativa: false,
+      motivo: motivo,
+      dataSaida: '2026-06-18',
+      obsDesligamento: obs
+    });
+    addLog('✅ ' + nomeCompleto + ' cadastrada como inativa!');
+  } else {
+    const p = equipe[key];
+    await db.ref('equipe/'+key).set({
+      nome: p.nome,
+      cargo: p.cargo||'Vendedora',
+      loja: p.loja||loja,
+      admissao: p.admissao||'',
+      ativa: false,
+      motivo: motivo,
+      dataSaida: '2026-06-18',
+      obsDesligamento: obs
+    });
+    addLog('✅ ' + nomeCompleto + ' desativada com sucesso!');
+  }
+  btn.textContent = '✅ Feito';
+}
+
+document.getElementById('btn-ana').addEventListener('click', ()=>
+  desativar('Ana Barbara', 'Ana Barbara Bispo de Souza', 'Litoral Plaza', 'demissao', 'demissão', 'btn-ana')
+);
+document.getElementById('btn-karina').addEventListener('click', ()=>
+  desativar('Karina', 'Karina Santos', 'Litoral Plaza', 'pedido', 'desistiu de começar', 'btn-karina')
+);
+</script>
+</body>
+</html>
