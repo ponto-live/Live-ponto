@@ -168,7 +168,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <div class="modal-sub" id="modal-sub"></div>
     <div style="margin-bottom:12px;display:flex;align-items:center;gap:10px;background:#f8f8f8;padding:8px 12px;border-radius:8px">
       <label style="font-size:11px;color:#888;white-space:nowrap">📅 Data</label>
-      <input type="date" class="field-input" id="ed-data" style="max-width:160px;margin:0">
+      <input type="date" class="field-input" id="ed-data" style="max-width:160px;margin:0" onchange="carregarDadosModal(editCtx.lojaFB,editCtx.vend,this.value)">
     </div>
     <div class="ocorr-grid" id="ocorr-grid">
       <button class="ocorr-btn sel" id="ocorr-normal" onclick="selOcorr('normal')"><span>🕐</span>Horário normal</button>
@@ -696,21 +696,33 @@ function selOcorr(tipo){
 }
 window.selOcorr=selOcorr;
 
-function abrirEdicao(lojaFB,lojaKey,vend){
+async function abrirEdicao(lojaFB,lojaKey,vend){
   // Pega a data atual selecionada na aba Hoje
   const dataAtual=document.getElementById('hoje-data-input')?.value||getHoje();
-  const regs=getVendRegs(lojaFB,vend,dataAtual);
   editCtx={lojaFB,lojaKey,vend};
   document.getElementById('modal-titulo').textContent='✏️ '+vend.split(' ')[0];
   document.getElementById('modal-sub').textContent=lojaKey;
   document.getElementById('ed-data').value=dataAtual;
-  const ocorr=regs.find(r=>r.ocorrencia);
-  selOcorr(ocorr?ocorr.ocorrencia:'normal');
-  TURNOS.forEach(t=>{const r=regs.find(x=>x.tipo===t);document.getElementById('ed-'+t).value=r?r.hora:'';});
+  // Carrega os dados do Firebase direto para garantir que está vendo o dia certo
+  await carregarDadosModal(lojaFB,vend,dataAtual);
   document.getElementById('ed-obs').value='';
   openModal('modal-edit');
 }
+
+async function carregarDadosModal(lojaFB,vend,data){
+  const snap=await get(ref(db,`ponto/${lojaFB}/${fbDate(data)}/${vendFB(vend)}`));
+  const dados=snap.exists()?snap.val():{};
+  const regsArr=Object.values(dados);
+  const ocorr=regsArr.find(r=>r.ocorrencia);
+  selOcorr(ocorr?ocorr.ocorrencia:'normal');
+  TURNOS.forEach(t=>{
+    const r=regsArr.find(x=>x.tipo===t);
+    document.getElementById('ed-'+t).value=r?r.hora:'';
+  });
+}
 window.abrirEdicao=abrirEdicao;
+window.carregarDadosModal=carregarDadosModal;
+window.editCtx=editCtx;
 
 async function salvarEdicao(){
   const obs=document.getElementById('ed-obs').value.trim();
