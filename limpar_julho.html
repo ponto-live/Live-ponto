@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head><meta charset="UTF-8"><title>Limpar Julho</title>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<style>body{font-family:sans-serif;background:#1a1a1a;color:#f0c000;display:flex;align-items:center;justify-content:center;height:100vh;margin:0}.box{background:#222;border-radius:12px;padding:30px;text-align:center;width:420px}.btn{width:100%;padding:14px;background:#1a7a3c;color:#fff;border:none;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;margin-top:16px}.msg{margin-top:16px;font-size:12px;color:#aaa;text-align:left;background:#111;border-radius:8px;padding:12px;min-height:60px}</style>
+</head>
+<body>
+<div class="box">
+  <div style="font-size:28px;margin-bottom:10px">🗑️</div>
+  <div style="font-size:16px;font-weight:600;margin-bottom:6px">Limpar escala de julho</div>
+  <div style="font-size:12px;color:#aaa;margin-bottom:16px">Remove Ana Barbara e Karina da escala de julho</div>
+  <button class="btn" id="btn">🗑️ Limpar agora</button>
+  <div class="msg" id="msg">Aguardando...</div>
+</div>
+<script>
+firebase.initializeApp({
+  apiKey:"AIzaSyB9LxMVbD6opFjrp5Q1icRmVeOg2M_8aJM",
+  authDomain:"live-ponto.firebaseapp.com",
+  databaseURL:"https://live-ponto-default-rtdb.firebaseio.com",
+  projectId:"live-ponto",
+  storageBucket:"live-ponto.appspot.com",
+  messagingSenderId:"396456789012",
+  appId:"1:396456789012:web:live-ponto"
+});
+const db = firebase.database();
+
+function vendFB(v){
+  return v.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,'_').replace(/[^a-zA-Z0-9_]/g,'');
+}
+
+document.getElementById('btn').addEventListener('click', async () => {
+  document.getElementById('btn').disabled = true;
+  const msg = document.getElementById('msg');
+  msg.textContent = 'Buscando chaves de escala de julho...';
+
+  const snap = await db.ref('escala').once('value');
+  const escala = snap.val() || {};
+  
+  const nomes = ['Ana Barbara Bispo de Souza', 'Karina Santos', 'Karina Santos Ravazani'];
+  let removidos = 0;
+
+  for(const nome of nomes){
+    const prefixo = vendFB(nome);
+    for(const key of Object.keys(escala)){
+      if(key.startsWith(prefixo) && key.includes('2026_07')){
+        await db.ref('escala/'+key).remove();
+        removidos++;
+        msg.textContent += '\nRemovido: ' + key;
+      }
+    }
+  }
+
+  if(removidos === 0){
+    msg.textContent = '✅ Nenhuma entrada de julho encontrada para Ana Barbara ou Karina!';
+  } else {
+    msg.textContent += '\n\n✅ ' + removidos + ' entradas removidas com sucesso!';
+  }
+});
+</script>
+</body>
+</html>
