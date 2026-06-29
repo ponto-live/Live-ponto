@@ -808,6 +808,10 @@ document.getElementById('btn-escala-next').addEventListener('click',()=>{escalaM
 document.getElementById('btn-export-mes').addEventListener('click',exportarExcelMes);
 
 function renderEscala(){
+  if(!_equipe.length){
+    document.getElementById('escala-container').innerHTML='<div style="text-align:center;padding:30px;color:#aaa;font-size:13px">Carregando equipe...</div>';
+    return;
+  }
   document.getElementById('escala-mes-titulo').textContent=MESES[escalaMes]+' '+escalaAno;
   const dias=diasNoMes(escalaAno,escalaMes);
   const hoje=getHoje();
