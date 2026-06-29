@@ -480,10 +480,11 @@ function getVendRegs(lojaFB,vend,data){
 function getEquipePorLoja(lojaKey){
   const hoje=getHoje();
   const mesAtual=hoje.substring(0,7);
-  if(!_equipe.length) return LOJAS_CFG.find(l=>l.key===lojaKey)?.pessoas||[];
+  // Sempre usa Firebase — nunca usa lista fixa
   return _equipe.filter(p=>{
     if(p.loja!==lojaKey) return false;
     if(p.ativa) return true;
+    // Inativas: só mostra no mês de saída
     if(p.dataSaida) return p.dataSaida.substring(0,7)>=mesAtual;
     return false;
   });
