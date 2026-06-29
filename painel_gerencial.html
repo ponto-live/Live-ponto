@@ -483,15 +483,14 @@ function getVendRegs(lojaFB,vend,data){
   const d=_pontoCache[lojaFB]&&_pontoCache[lojaFB][dk]&&_pontoCache[lojaFB][dk][vk];
   return d?Object.values(d):[];
 }
-function getEquipePorLoja(lojaKey){
-  const hoje=getHoje();
-  const mesAtual=hoje.substring(0,7);
-  // Sempre usa Firebase — nunca usa lista fixa
+function getEquipePorLoja(lojaKey, mesFiltro){
+  // mesFiltro = 'YYYY-MM' para escala/banco, senão usa mês atual
+  const mesRef = mesFiltro || getHoje().substring(0,7);
   return _equipe.filter(p=>{
     if(p.loja!==lojaKey) return false;
     if(p.ativa) return true;
-    // Inativas: só mostra no mês de saída
-    if(p.dataSaida) return p.dataSaida.substring(0,7)>=mesAtual;
+    // Inativas: só mostra no mês exato de saída
+    if(p.dataSaida) return p.dataSaida.substring(0,7)===mesRef;
     return false;
   });
 }
@@ -813,7 +812,8 @@ function renderEscala(){
   const dias=diasNoMes(escalaAno,escalaMes);
   const hoje=getHoje();
   document.getElementById('escala-container').innerHTML=LOJAS_CFG.map(loja=>{
-    const pessoas=getEquipePorLoja(loja.key);
+    const mesFiltroEscala=`${escalaAno}-${String(escalaMes+1).padStart(2,'0')}`;
+    const pessoas=getEquipePorLoja(loja.key, mesFiltroEscala);
     let thDias='<th class="nome-col">Vendedora</th>';
     for(let d=1;d<=dias;d++){
       const data=`${escalaAno}-${String(escalaMes+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
@@ -896,7 +896,8 @@ async function renderBanco(){
   document.getElementById('banco-mes-titulo').textContent=MESES[bancoMes]+' '+bancoAno;
   const lojasFilt=filtroBanco==='Todas'?LOJAS_CFG:LOJAS_CFG.filter(l=>l.nome.includes(filtroBanco)||l.fb.includes(filtroBanco));
   const htmls=await Promise.all(lojasFilt.map(async loja=>{
-    const pessoas=getEquipePorLoja(loja.key);
+    const mesFiltroB=`${bancoAno}-${String(bancoMes+1).padStart(2,'0')}`;
+    const pessoas=getEquipePorLoja(loja.key, mesFiltroB);
     const rows=await Promise.all(pessoas.map(async p=>{
       const b=await calcBancoMes(p.nome,loja.fb,bancoAno,bancoMes);
       const cls=b.banco>0?'banco-pos':b.banco<0?'banco-neg':'';
