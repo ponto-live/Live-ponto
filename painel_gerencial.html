@@ -460,7 +460,13 @@ db.ref('.info/connected').on('value',snap=>{
 db.ref('ponto').on('value',snap=>{_pontoCache=snap.val()||{};if(abaAtiva==='hoje')renderHoje();});
 db.ref('escala').on('value',snap=>{_escala=snap.val()||{};if(abaAtiva==='escala')renderEscala();if(abaAtiva==='banco')renderBanco();});
 db.ref('feriados').on('value',snap=>{_feriados=snap.val()||{};renderFeriadoBar();});
-db.ref('equipe').on('value',snap=>{_equipe=snap.val()?Object.entries(snap.val()).map(([k,v])=>({...v,_key:k})):[];if(abaAtiva==='equipe')renderEquipe();});
+db.ref('equipe').on('value',snap=>{
+  _equipe=snap.val()?Object.entries(snap.val()).map(([k,v])=>({...v,_key:k})):[];
+  if(abaAtiva==='equipe') renderEquipe();
+  if(abaAtiva==='escala') renderEscala();
+  if(abaAtiva==='hoje') renderHoje();
+  if(abaAtiva==='banco') renderBanco();
+});
 db.ref('log').on('value',snap=>{_log=snap.val()||{};if(abaAtiva==='log')renderLog();});
 
 // ===== HELPERS =====
