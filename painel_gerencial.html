@@ -418,7 +418,7 @@ const LOJAS_CFG=[
     {nome:'Tainã Reis da Costa',cargo:'Vendedora'},
     {nome:'Weslayne Karen Nunes',cargo:'Vendedora'},
     {nome:'Dayana Silva de Aguiar',cargo:'Vendedora'},
-    {nome:'Ana Barbara Bispo de Souza',cargo:'Vendedora'}
+    {nome:'Ana Lis Bastos Assef',cargo:'Vendedora'}
   ]},
   {nome:'Bioritmo',key:'Bioritmo',fb:'Bioritmo',pessoas:[
     {nome:'Fernanda de Souza Rocha',cargo:'Vendedora'},
@@ -924,18 +924,63 @@ function renderLog(){
 }
 
 // ===== EQUIPE =====
-document.getElementById('btn-nova-vend').addEventListener('click',()=>{
-  eqEditKey=null;
-  document.getElementById('eq-modal-titulo').textContent='Nova colaboradora';
-  document.getElementById('eq-modal-sub').textContent='';
-  document.getElementById('eq-nome').value='';
-  document.getElementById('eq-cargo').value='Vendedora';
-  document.getElementById('eq-loja').value='Praiamar Shopping';
-  document.getElementById('eq-admissao').value=getHoje();
-  openModal('modal-equipe');
-});
-document.getElementById('btn-cancel-equipe').addEventListener('click',()=>closeModal('modal-equipe'));
-document.getElementById('btn-salvar-equipe').addEventListener('click',salvarEquipe);
+function abrirModalEquipe(key){
+  // Cria modal dinamicamente para garantir que os botões funcionam
+  const anterior=document.getElementById('modal-equipe-temp');
+  if(anterior) anterior.remove();
+  const p=key?_equipe.find(x=>x._key===key):null;
+  eqEditKey=key||null;
+  const modal=document.createElement('div');
+  modal.className='modal-overlay open';
+  modal.id='modal-equipe-temp';
+  modal.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:9999;padding:16px';
+  const box=document.createElement('div');
+  box.style.cssText='background:#fff;border-radius:12px;padding:24px;width:400px;max-width:100%;max-height:90vh;overflow-y:auto';
+  box.innerHTML=`
+    <h3 style="font-size:15px;font-weight:600;margin-bottom:4px">${p?'Editar colaboradora':'Nova colaboradora'}</h3>
+    <div style="font-size:12px;color:#888;margin-bottom:16px">${p?p.nome:''}</div>
+    <label style="font-size:11px;color:#888;display:block;margin-bottom:3px;margin-top:10px">Nome completo</label>
+    <input type="text" id="eq-nome-t" value="${p?p.nome:''}" style="width:100%;padding:9px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px">
+    <label style="font-size:11px;color:#888;display:block;margin-bottom:3px;margin-top:10px">Cargo</label>
+    <select id="eq-cargo-t" style="width:100%;padding:9px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;background:#fff">
+      <option ${(!p||p.cargo==='Vendedora')?'selected':''}>Vendedora</option>
+      <option ${p&&p.cargo==='Vendedor'?'selected':''}>Vendedor</option>
+      <option ${p&&p.cargo==='Auxiliar de Loja'?'selected':''}>Auxiliar de Loja</option>
+      <option ${p&&p.cargo==='Auxiliar'?'selected':''}>Auxiliar</option>
+      <option ${p&&p.cargo==='Gerente'?'selected':''}>Gerente</option>
+    </select>
+    <label style="font-size:11px;color:#888;display:block;margin-bottom:3px;margin-top:10px">Loja</label>
+    <select id="eq-loja-t" style="width:100%;padding:9px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;background:#fff">
+      <option ${(!p||p.loja==='Praiamar Shopping')?'selected':''}>Praiamar Shopping</option>
+      <option ${p&&p.loja==='Miramar Shopping'?'selected':''}>Miramar Shopping</option>
+      <option ${p&&p.loja==='Azevedo Sodré'?'selected':''}>Azevedo Sodré</option>
+      <option ${p&&p.loja==='Litoral Plaza'?'selected':''}>Litoral Plaza</option>
+      <option ${p&&p.loja==='Bioritmo'?'selected':''}>Bioritmo</option>
+    </select>
+    <label style="font-size:11px;color:#888;display:block;margin-bottom:3px;margin-top:10px">Data de admissão</label>
+    <input type="date" id="eq-admissao-t" value="${p?p.admissao||'':getHoje()}" style="width:100%;padding:9px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px">
+    <div style="display:flex;gap:8px;margin-top:16px">
+      <button id="eq-cancelar-t" style="padding:11px 16px;background:transparent;border:1px solid #e0e0e0;border-radius:8px;font-size:13px;cursor:pointer;color:#666">Cancelar</button>
+      <button id="eq-salvar-t" style="flex:1;padding:11px;background:#1a1a1a;color:#f0c000;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer">💾 Salvar</button>
+    </div>`;
+  modal.appendChild(box);
+  document.body.appendChild(modal);
+  document.getElementById('eq-cancelar-t').addEventListener('click',()=>modal.remove());
+  document.getElementById('eq-salvar-t').addEventListener('click',async()=>{
+    const nome=document.getElementById('eq-nome-t').value.trim();
+    if(!nome){alert('Informe o nome.');return;}
+    const dados={nome,cargo:document.getElementById('eq-cargo-t').value,loja:document.getElementById('eq-loja-t').value,admissao:document.getElementById('eq-admissao-t').value,ativa:true};
+    if(eqEditKey){
+      const pAt=_equipe.find(x=>x._key===eqEditKey);
+      await db.ref('equipe/'+eqEditKey).set({...dados,ativa:pAt?pAt.ativa:true,motivo:pAt?pAt.motivo||null:null,dataSaida:pAt?pAt.dataSaida||null:null,obsDesligamento:pAt?pAt.obsDesligamento||null:null});
+    } else {
+      await db.ref('equipe').push(dados);
+    }
+    modal.remove();
+  });
+}
+
+document.getElementById('btn-nova-vend').addEventListener('click',()=>abrirModalEquipe(null));
 
 async function salvarEquipe(){
   const nome=document.getElementById('eq-nome').value.trim();
@@ -970,7 +1015,7 @@ async function initEquipe(){
       {nome:'Tainã Reis da Costa',cargo:'Vendedora',loja:'Litoral Plaza',admissao:'',ativa:true},
       {nome:'Weslayne Karen Nunes',cargo:'Vendedora',loja:'Litoral Plaza',admissao:'',ativa:true},
       {nome:'Dayana Silva de Aguiar',cargo:'Vendedora',loja:'Litoral Plaza',admissao:'',ativa:true},
-      {nome:'Ana Barbara Bispo de Souza',cargo:'Vendedora',loja:'Litoral Plaza',admissao:'',ativa:true},
+      {nome:'Ana Lis Bastos Assef',cargo:'Vendedora',loja:'Litoral Plaza',admissao:'2026-06-23',ativa:true},
       {nome:'Fernanda de Souza Rocha',cargo:'Vendedora',loja:'Bioritmo',admissao:'',ativa:true},
       {nome:'Maria Eduarda Lisboa Silva',cargo:'Vendedora',loja:'Bioritmo',admissao:'',ativa:true},
     ];
@@ -995,18 +1040,7 @@ function renderEquipe(){
 
   // Listeners equipe
   document.querySelectorAll('[data-edit-key]').forEach(btn=>{
-    btn.addEventListener('click',()=>{
-      const p=_equipe.find(x=>x._key===btn.dataset.editKey);
-      if(!p) return;
-      eqEditKey=p._key;
-      document.getElementById('eq-modal-titulo').textContent='Editar colaboradora';
-      document.getElementById('eq-modal-sub').textContent=p.nome;
-      document.getElementById('eq-nome').value=p.nome;
-      document.getElementById('eq-cargo').value=p.cargo;
-      document.getElementById('eq-loja').value=p.loja;
-      document.getElementById('eq-admissao').value=p.admissao||'';
-      openModal('modal-equipe');
-    });
+    btn.addEventListener('click',()=>abrirModalEquipe(btn.dataset.editKey));
   });
   document.querySelectorAll('[data-desativar-key]').forEach(btn=>{
     btn.addEventListener('click',()=>abrirDesativar(btn.dataset.desativarKey));
