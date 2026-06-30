@@ -70,9 +70,6 @@ select{width:100%;padding:11px 12px;border:1px solid #ddd;border-radius:8px;back
     <div class="lbl">Seu nome</div>
     <select id="f-vend" onchange="onVendChange()">
       <option value="">Selecione seu nome...</option>
-      <option>Mariela Parente de Toledo Piza</option>
-      <option>Raisa Vigolo Chaves</option>
-      <option>Debora Cristina Olimpio de Oliveira</option>
     </select>
     <div class="lbl">Tipo de registro</div>
     <div class="turno-grid">
@@ -137,6 +134,27 @@ const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
 const LOJA_KEY = 'Azevedo Sodré';
+
+// Carregar equipe ativa do Firebase dinamicamente
+async function carregarEquipe(){
+  try{
+    const snap = await get(ref(db, 'equipe'));
+    const equipe = snap.exists() ? snap.val() : {};
+    const hoje = getHoje();
+    const mesAtual = hoje.substring(0,7);
+    const ativos = Object.values(equipe).filter(p => {
+      if(p.loja !== LOJA_KEY) return false;
+      if(p.ativa) return true;
+      if(p.dataSaida) return p.dataSaida.substring(0,7) === mesAtual;
+      return false;
+    }).sort((a,b)=>a.nome.localeCompare(b.nome));
+    const sel = document.getElementById('f-vend');
+    sel.innerHTML = '<option value="">Selecione seu nome...</option>' + ativos.map(p=>`<option>${p.nome}</option>`).join('');
+  }catch(e){
+    console.error('Erro ao carregar equipe', e);
+  }
+}
+carregarEquipe();
 const TURNOS = ['entrada','saida_almoco','retorno_almoco','saida'];
 const TINFO = {
   entrada:        {l:'Entrada',        i:'🟢', b:'b-e', p:'Próximo: Saída p/ Almoço'},
