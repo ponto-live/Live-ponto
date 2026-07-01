@@ -168,7 +168,7 @@ function getHoje(){const d=new Date();const br=new Date(d.toLocaleString('en-US'
 function getNow(){const d=new Date();return d.getHours().toString().padStart(2,'0')+':'+d.getMinutes().toString().padStart(2,'0');}
 function getDiaSemana(){return new Date().getDay();}
 function getDataFmt(){return new Date().toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric'});}
-function lojaKeyFB(k){return k.replace(/\s/g,'_').replace(/[^a-zA-Z0-9_]/g,'');}
+function lojaKeyFB(k){return k.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,'_').replace(/[^a-zA-Z0-9_]/g,'');}
 function vendKeyFB(v){return v.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,'_').replace(/[^a-zA-Z0-9_]/g,'');}
 
 // Conexão
